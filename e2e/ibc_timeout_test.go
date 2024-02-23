@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -132,14 +133,6 @@ func TestIBCTransferTimeout(t *testing.T) {
 	// Compose an IBC transfer and send from rollapp -> dymension
 	var transferAmount = math.NewInt(1_000_000)
 
-	channel, err := ibc.GetTransferChannel(ctx, r, eRep, dymension.Config().ChainID, rollapp1.Config().ChainID)
-	require.NoError(t, err)
-
-	transferData := ibc.WalletData{
-		Address: dymensionUserAddr,
-		Denom:   rollapp1.Config().Denom,
-		Amount:  transferAmount,
-	}
 	// Set a short timeout for IBC transfer
 	options := ibc.TransferOptions{
 		Timeout: &ibc.IBCTimeout{
@@ -147,65 +140,100 @@ func TestIBCTransferTimeout(t *testing.T) {
 		},
 	}
 
-	_, err = rollapp1.SendIBCTransfer(ctx, channel.ChannelID, rollappUserAddr, transferData, options)
-	require.NoError(t, err)
-	// Assert balance was updated on the rollapp
-	testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, rollapp1.Config().Denom, walletAmount.Sub(transferData.Amount))
+	t.Run("test timeout urax on Hub", func(t *testing.T) {
+		channel, err := ibc.GetTransferChannel(ctx, r, eRep, dymension.Config().ChainID, rollapp1.Config().ChainID)
+		require.NoError(t, err)
 
-	err = r.StartRelayer(ctx, eRep, ibcPath)
-	require.NoError(t, err)
+		transferData := ibc.WalletData{
+			Address: dymensionUserAddr,
+			Denom:   rollapp1.Config().Denom,
+			Amount:  transferAmount,
+		}
 
-	err = testutil.WaitForBlocks(ctx, 5, dymension)
-	require.NoError(t, err)
+		_, err = rollapp1.SendIBCTransfer(ctx, channel.ChannelID, rollappUserAddr, transferData, options)
+		require.NoError(t, err)
+		// Assert balance was updated on the rollapp
+		testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, rollapp1.Config().Denom, walletAmount.Sub(transferData.Amount))
 
-	// Stop relayer after relaying
-	err = r.StopRelayer(ctx, eRep)
-	require.NoError(t, err, "an error occurred while stopping the relayer")
+		stdout, _, err := rollapp1.GetNode().ExecQuery(ctx, "ibc-transfer", "escrow-address", channel.PortID, channel.ChannelID)
+		require.NoError(t, err)
+		escrowAddr := strings.ReplaceAll(string(stdout), " ", "")
+		escrowAddr = strings.ReplaceAll(escrowAddr, "\n", "")
+		testutil.AssertBalance(t, ctx, rollapp1, escrowAddr, rollapp1.Config().Denom, transferData.Amount)
 
-	// Get the IBC denom for urax on Hub
-	rollappTokenDenom := transfertypes.GetPrefixedDenom(channel.Counterparty.PortID, channel.Counterparty.ChannelID, rollapp1.Config().Denom)
-	rollappIBCDenom := transfertypes.ParseDenomTrace(rollappTokenDenom).IBCDenom()
+		err = r.StartRelayer(ctx, eRep, ibcPath)
+		require.NoError(t, err)
+		t.Cleanup(
+			func() {
+				err := r.StopRelayer(ctx, eRep)
+				if err != nil {
+					t.Logf("an error occurred while stopping the relayer: %s", err)
+				}
+			},
+		)
+		err = testutil.WaitForBlocks(ctx, 5, dymension)
+		require.NoError(t, err)
 
-	// Assert funds were returned to the sender after the timeout has occured
-	testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, rollapp1.Config().Denom, walletAmount)
-	testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, rollappIBCDenom, math.NewInt(0))
+		// Get the IBC denom for urax on Hub
+		rollappTokenDenom := transfertypes.GetPrefixedDenom(channel.Counterparty.PortID, channel.Counterparty.ChannelID, rollapp1.Config().Denom)
+		rollappIBCDenom := transfertypes.ParseDenomTrace(rollappTokenDenom).IBCDenom()
 
-	channel, err = ibc.GetTransferChannel(ctx, r, eRep, rollapp1.Config().ChainID, dymension.Config().ChainID)
-	require.NoError(t, err)
+		// Assert funds were returned to the sender after the timeout has occured
+		testutil.AssertBalance(t, ctx, rollapp1, escrowAddr, rollapp1.Config().Denom, math.NewInt(0))
+		testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, rollapp1.Config().Denom, walletAmount)
+		testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, rollappIBCDenom, math.NewInt(0))
+	})
 
-	transferData = ibc.WalletData{
-		Address: rollappUserAddr,
-		Denom:   dymension.Config().Denom,
-		Amount:  transferAmount,
-	}
+	t.Run("test timeout Hub to urax", func(t *testing.T) {
 
-	// Compose an IBC transfer and send from dymension -> rollapp
-	_, err = dymension.SendIBCTransfer(ctx, channel.ChannelID, dymensionUserAddr, transferData, options)
-	require.NoError(t, err)
-	// Assert balance was updated on the rollapp
-	testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, dymension.Config().Denom, walletAmount.Sub(transferData.Amount))
-	// Get the IBC denom for dymension on roll app
-	dymensionTokenDenom := transfertypes.GetPrefixedDenom(channel.Counterparty.PortID, channel.Counterparty.ChannelID, dymension.Config().Denom)
-	dymensionIBCDenom := transfertypes.ParseDenomTrace(dymensionTokenDenom).IBCDenom()
-	testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, dymensionIBCDenom, math.NewInt(0))
+		channel, err := ibc.GetTransferChannel(ctx, r, eRep, rollapp1.Config().ChainID, dymension.Config().ChainID)
+		require.NoError(t, err)
 
-	err = r.StartRelayer(ctx, eRep, ibcPath)
-	require.NoError(t, err)
+		transferData := ibc.WalletData{
+			Address: rollappUserAddr,
+			Denom:   dymension.Config().Denom,
+			Amount:  transferAmount,
+		}
 
-	t.Cleanup(
-		func() {
-			err := r.StopRelayer(ctx, eRep)
-			if err != nil {
-				t.Logf("an error occurred while stopping the relayer: %s", err)
-			}
-		},
-	)
+		// Compose an IBC transfer and send from dymension -> rollapp
+		_, err = dymension.SendIBCTransfer(ctx, channel.ChannelID, dymensionUser.KeyName(), transferData, options)
+		require.NoError(t, err)
+		// Assert balance was updated on the rollapp
+		testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, dymension.Config().Denom, walletAmount.Sub(transferData.Amount))
 
-	err = testutil.WaitForBlocks(ctx, 5, rollapp1)
-	require.NoError(t, err)
+		stdout, _, err := dymension.GetNode().ExecQuery(ctx, "ibc-transfer", "escrow-address", channel.PortID, channel.ChannelID)
+		require.NoError(t, err)
+		escrowAddr := strings.ReplaceAll(string(stdout), " ", "")
+		escrowAddr = strings.ReplaceAll(escrowAddr, "\n", "")
+		testutil.AssertBalance(t, ctx, dymension, escrowAddr, dymension.Config().Denom, transferData.Amount)
 
-	// Assert funds were returned to the sender after the timeout has occured
-	testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, dymension.Config().Denom, walletAmount)
-	testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, dymensionIBCDenom, math.NewInt(0))
+		// According to delayedack module, we need it have finalizedHeight > ibcClientLatestHeight
+		// in order to trigger ibc timeout or else it will trigger callback
+		err = testutil.WaitForBlocks(ctx, 5, rollapp1)
+		require.NoError(t, err)
 
+		err = r.StartRelayer(ctx, eRep, ibcPath)
+		require.NoError(t, err)
+
+		t.Cleanup(
+			func() {
+				err := r.StopRelayer(ctx, eRep)
+				if err != nil {
+					t.Logf("an error occurred while stopping the relayer: %s", err)
+				}
+			},
+		)
+
+		err = testutil.WaitForBlocks(ctx, 5, dymension)
+		require.NoError(t, err)
+
+		// Get the IBC denom for dymension on roll app
+		dymensionTokenDenom := transfertypes.GetPrefixedDenom(channel.Counterparty.PortID, channel.Counterparty.ChannelID, dymension.Config().Denom)
+		dymensionIBCDenom := transfertypes.ParseDenomTrace(dymensionTokenDenom).IBCDenom()
+
+		// Assert funds were returned to the sender after the timeout has occured
+		testutil.AssertBalance(t, ctx, rollapp1, rollappUserAddr, dymensionIBCDenom, math.NewInt(0))
+		testutil.AssertBalance(t, ctx, dymension, escrowAddr, dymension.Config().Denom, math.NewInt(0))
+		testutil.AssertBalance(t, ctx, dymension, dymensionUserAddr, dymension.Config().Denom, walletAmount)
+	})
 }
