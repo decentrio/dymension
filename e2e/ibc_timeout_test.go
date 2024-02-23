@@ -207,7 +207,7 @@ func TestIBCTransferTimeout(t *testing.T) {
 		escrowAddr = strings.ReplaceAll(escrowAddr, "\n", "")
 		testutil.AssertBalance(t, ctx, dymension, escrowAddr, dymension.Config().Denom, transferData.Amount)
 
-		// According to delayedack module, we need it have finalizedHeight > ibcClientLatestHeight
+		// According to delayedack module, we need the rollapp to have finalizedHeight > ibcClientLatestHeight
 		// in order to trigger ibc timeout or else it will trigger callback
 		err = testutil.WaitForBlocks(ctx, 5, rollapp1)
 		require.NoError(t, err)
@@ -224,7 +224,7 @@ func TestIBCTransferTimeout(t *testing.T) {
 			},
 		)
 
-		err = testutil.WaitForBlocks(ctx, 5, dymension)
+		err = testutil.WaitForBlocks(ctx, 10, dymension)
 		require.NoError(t, err)
 
 		// Get the IBC denom for dymension on roll app
