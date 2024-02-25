@@ -89,6 +89,9 @@ build: go.sum
 docker-build-e2e:
 	@DOCKER_BUILDKIT=1 docker build -t ghcr.io/dymensionxyz/dymension:e2e -f Dockerfile .
 
+docker-build-e2e-pre-upgrade:
+	@DOCKER_BUILDKIT=1 docker build -t ghcr.io/dymensionxyz/dymension:e2e-pre-upgrade -f pre_upgrade.Dockerfile .
+
 ###############################################################################
 ###                                E2E tests                                ###
 ###############################################################################
@@ -100,11 +103,15 @@ e2e-test-ibc:
 # Executes IBC tests via rollup-e2e-testing
 e2e-test-ibc-timeout:
 	cd e2e && go test -timeout=25m -race -v -run TestIBCTransferTimeout .
-  
-# Executes all tests via rollup-e2e-testing
-e2e-test-all: e2e-test-ibc e2e-test-ibc-timeout
 
-.PHONY: e2e-test-ibc e2e-test-ibc-timeout e2e-test-all
+# Executes upgrade tests via rollup-e2e-testing
+e2e-test-upgrade-chain:
+	cd e2e && go test -timeout=25m -race -v -run TestDymensionHubChainUpgrade .
+
+# Executes all tests via rollup-e2e-testing
+e2e-test-all: e2e-test-ibc e2e-test-ibc-timeout e2e-test-upgrade-chain
+
+.PHONY: e2e-test-ibc e2e-test-ibc-timeout e2e-test-upgrade-chain e2e-test-all
 
 ###############################################################################
 ###                                Proto                                    ###

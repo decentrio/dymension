@@ -81,7 +81,7 @@ func TestIBCTransferTimeout(t *testing.T) {
 
 	// Relayer Factory
 	client, network := test.DockerSetup(t)
-	r := relayer.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
+	r := test.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
 		relayer.CustomDockerImage("ghcr.io/cosmos/relayer", "reece-v2.3.1-ethermint", "100:1000"),
 	).Build(t, client, network)
 	const ibcPath = "ibc-path"
@@ -109,8 +109,6 @@ func TestIBCTransferTimeout(t *testing.T) {
 		// BlockDatabaseFile: test.DefaultBlockDatabaseFilepath(),
 	})
 	require.NoError(t, err)
-
-	walletAmount := math.NewInt(1_000_000_000_000)
 
 	// Create some user accounts on both chains
 	users := test.GetAndFundTestUsers(t, ctx, t.Name(), walletAmount, dymension, rollapp1)
