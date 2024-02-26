@@ -1,13 +1,10 @@
 module github.com/dymensionxyz/dymension/e2e
 
-go 1.21
-
-toolchain go1.21.5
+go 1.19
 
 replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
-	github.com/decentrio/rollup-e2e-testing => ../../rollup-e2e-testing
 
 	github.com/dymensionxyz/dymension => ../
 	github.com/evmos/ethermint => github.com/dymensionxyz/ethermint v0.22.0-dymension-v0.3
@@ -23,7 +20,7 @@ require (
 	cosmossdk.io/math v1.0.0-rc.0
 	github.com/cosmos/cosmos-sdk v0.46.16-0.20231025193730-41d2a21c1348
 	github.com/cosmos/ibc-go/v6 v6.2.1
-	github.com/decentrio/rollup-e2e-testing v0.0.0-20240219071211-469e9747c5cf
+	github.com/decentrio/rollup-e2e-testing v0.0.0-20240220083740-a975b15d6e21
 	github.com/evmos/ethermint v0.0.0-00010101000000-000000000000
 	github.com/icza/dyno v0.0.0-20220812133438-f0b6f8a18845
 	github.com/stretchr/testify v1.8.4

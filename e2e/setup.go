@@ -17,15 +17,22 @@ import (
 )
 
 var (
-	DymensionMainRepo = "ghcr.io/decentrio/dymension"
+	DymensionMainRepo = "ghcr.io/dymensionxyz/dymension"
 
-	RollappMainRepo = "ghcr.io/decentrio/rollapp"
+	RollappMainRepo = "ghcr.io/dymensionxyz/rollapp"
 
-	repo, version = GetDockerImageInfo()
+	preUpgradeRepo, preUpgradeVersion = GetPreUpgradeDockerImageInfo()
+	repo, version                     = GetDockerImageInfo()
 
 	dymensionImage = ibc.DockerImage{
 		Repository: repo,
 		Version:    version,
+		UidGid:     "1025:1025",
+	}
+
+	preUpgradeDymensionImage = ibc.DockerImage{
+		Repository: preUpgradeRepo,
+		Version:    preUpgradeVersion,
 		UidGid:     "1025:1025",
 	}
 
@@ -52,12 +59,27 @@ var (
 
 // GetDockerImageInfo returns the appropriate repo and branch version string for integration with the CI pipeline.
 // The remote runner sets the BRANCH_CI env var. If present, tests will use the docker image pushed up to the repo.
-// If testing locally, user should run `make docker-build-debug` and tests will use the local image.
+// If testing locally, user should run `make docker-build-e2e` and tests will use the local image.
 func GetDockerImageInfo() (repo, version string) {
 	branchVersion, found := os.LookupEnv("BRANCH_CI")
 	repo = DymensionMainRepo
 	if !found {
 		branchVersion = "e2e"
+	}
+
+	// github converts / to - for pushed docker images
+	branchVersion = strings.ReplaceAll(branchVersion, "/", "-")
+	return repo, branchVersion
+}
+
+// GetPreUpgradeDockerImageInfo returns the appropriate repo and branch version string for integration with the CI pipeline.
+// The remote runner sets the BRANCH_CI env var. If present, tests will use the docker image pushed up to the repo.
+// If testing locally, user should run `make docker-build-e2e-pre-upgrade` and tests will use the local image.
+func GetPreUpgradeDockerImageInfo() (repo, version string) {
+	branchVersion, found := os.LookupEnv("BRANCH_CI")
+	repo = DymensionMainRepo
+	if !found {
+		branchVersion = "e2e-pre-upgrade"
 	}
 
 	// github converts / to - for pushed docker images

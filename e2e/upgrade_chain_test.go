@@ -13,6 +13,8 @@ import (
 	test "github.com/decentrio/rollup-e2e-testing"
 	"github.com/decentrio/rollup-e2e-testing/cosmos"
 	"github.com/decentrio/rollup-e2e-testing/ibc"
+	"github.com/decentrio/rollup-e2e-testing/relayer"
+	"github.com/decentrio/rollup-e2e-testing/testreporter"
 	"github.com/decentrio/rollup-e2e-testing/testutil"
 
 	"github.com/stretchr/testify/require"
@@ -32,13 +34,50 @@ func TestDymensionHubChainUpgrade(t *testing.T) {
 	}
 
 	ctx := context.Background()
+
+	configFileOverrides := make(map[string]any)
+	dymintTomlOverrides := make(testutil.Toml)
+	dymintTomlOverrides["settlement_layer"] = "dymension"
+	dymintTomlOverrides["node_address"] = "http://dymension_100-1-val-0-TestIBCTransfer:26657"
+	dymintTomlOverrides["rollapp_id"] = "demo-dymension-rollapp"
+	configFileOverrides["config/dymint.toml"] = dymintTomlOverrides
+
+	dymensionConfig.ModifyGenesis = modifyGenesisShortProposals(votingPeriod, maxDepositPeriod)
+	dymensionConfig.Images = []ibc.DockerImage{preUpgradeDymensionImage}
+
 	// Create chain factory with dymension
 	numHubVals := 3
 	numHubFullNodes := 3
-
-	dymensionConfig.ModifyGenesis = modifyGenesisShortProposals(votingPeriod, maxDepositPeriod)
-	dymensionConfig.Images = []ibc.DockerImage{prevVersionDymensionImage}
+	numRollAppFn := 0
+	numRollAppVals := 1
 	cf := cosmos.NewBuiltinChainFactory(zaptest.NewLogger(t), []*cosmos.ChainSpec{
+		{
+			Name: "rollapp1",
+			ChainConfig: ibc.ChainConfig{
+				Type:    "rollapp",
+				Name:    "rollapp-temp",
+				ChainID: "demo-dymension-rollapp",
+				Images: []ibc.DockerImage{
+					{
+						Repository: "ghcr.io/decentrio/rollapp",
+						Version:    "e2e",
+						UidGid:     "1025:1025",
+					},
+				},
+				Bin:                 "rollappd",
+				Bech32Prefix:        "rol",
+				Denom:               "urax",
+				CoinType:            "118",
+				GasPrices:           "0.0urax",
+				GasAdjustment:       1.1,
+				TrustingPeriod:      "112h",
+				NoHostMount:         false,
+				ModifyGenesis:       nil,
+				ConfigFileOverrides: configFileOverrides,
+			},
+			NumValidators: &numRollAppVals,
+			NumFullNodes:  &numRollAppFn,
+		},
 		{
 			Name:          "dymension-hub",
 			ChainConfig:   dymensionConfig,
@@ -46,26 +85,43 @@ func TestDymensionHubChainUpgrade(t *testing.T) {
 			NumFullNodes:  &numHubFullNodes,
 		},
 	})
-
+	// Get chains from the chain factory
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
 
-	dymension := chains[0].(*cosmos.CosmosChain)
-	ic := test.NewSetup().
-		AddChain(dymension)
+	rollapp1 := chains[0].(*cosmos.CosmosChain)
+	dymension := chains[1].(*cosmos.CosmosChain)
 
+	// Relayer Factory
 	client, network := test.DockerSetup(t)
+	r := test.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
+		relayer.CustomDockerImage("ghcr.io/cosmos/relayer", "reece-v2.3.1-ethermint", "100:1000"),
+	).Build(t, client, network)
+	const ibcPath = "ibc-path"
+	ic := test.NewSetup().
+		AddChain(rollapp1).
+		AddChain(dymension).
+		AddRelayer(r, "relayer").
+		AddLink(test.InterchainLink{
+			Chain1:  dymension,
+			Chain2:  rollapp1,
+			Relayer: r,
+			Path:    ibcPath,
+		})
 
-	require.NoError(t, ic.Build(ctx, nil, test.InterchainBuildOptions{
+	rep := testreporter.NewNopReporter()
+	eRep := rep.RelayerExecReporter(t)
+
+	err = ic.Build(ctx, eRep, test.InterchainBuildOptions{
 		TestName:         t.Name(),
 		Client:           client,
 		NetworkID:        network,
-		SkipPathCreation: true,
-		// BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
-	}))
-	t.Cleanup(func() {
-		_ = ic.Close()
+		SkipPathCreation: false,
+
+		// This can be used to write to the block database which will index all block data e.g. txs, msgs, events, etc.
+		// BlockDatabaseFile: test.DefaultBlockDatabaseFilepath(),
 	})
+	require.NoError(t, err)
 
 	// Make sure gov params has changed
 	dymNode := dymension.FullNodes[0]

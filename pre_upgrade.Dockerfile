@@ -6,13 +6,15 @@ ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
 RUN apk add --no-cache $PACKAGES
 
-RUN git clone -b '248650a' --single-branch --depth 1 https://github.com/dymensionxyz/dymension.git /dymension
+RUN git clone -b 'release/v2.0.x' --single-branch --depth 1 https://github.com/dymensionxyz/dymension.git /dymension
 
 WORKDIR /dymension
 
 RUN go mod download
 
 COPY . .
+
+RUN go mod tidy
 
 RUN make build
 
