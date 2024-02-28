@@ -10,12 +10,6 @@ RUN git clone -b 'release/v2.0.x' --single-branch --depth 1 https://github.com/d
 
 WORKDIR /dymension
 
-RUN go mod download
-
-COPY . .
-
-RUN go mod tidy
-
 RUN make build
 
 FROM alpine:3.16.1
