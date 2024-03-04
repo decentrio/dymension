@@ -1,0 +1,89 @@
+version: "4"
+
+services:
+  dymension1:
+    image: local:dymension
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      args:
+        RUNNER_IMAGE: alpine:3.19
+        GO_VERSION: "1.21"
+    volumes:
+      - ./scripts/start.sh:/dymension/start.sh
+      - ./scripts/testnetify.py:/dymension/testnetify.py
+      - ./state_export.json:/dymension/state_export.json
+      - ./transform.py:/dymension/transform.py
+    entrypoint:
+      - /dymension/start.sh
+    environment:
+      MONIKER: val1
+      CHAIN_ID: dym_2200-1
+      MNEMONIC: "amused rural desk trick safe whip first menu worth swap enhance punch spin figure elevator abandon camera idea peace nurse coyote adjust modify produce"
+      ADDRESS: "dym1yz44rvamznay20ky3r6um9wmy4kum4xu8x8q3h"
+    ports:
+      - 2001:26657
+      - 2004:1317
+      - 2002:9090
+      - 2003:9091
+      - 2005:6060
+      - 2006:9092
+      - 2000:26656
+
+  dymension2:
+    image: local:dymension
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      args:
+        RUNNER_IMAGE: alpine:3.19
+        GO_VERSION: "1.21"
+    volumes:
+      - ./scripts/start.sh:/dymension/start.sh
+      - ./scripts/testnetify.py:/dymension/testnetify.py
+      - ./state_export.json:/dymension/state_export.json
+      - $HOME/.dymensiond-local/:/dymension/.dymensiond/
+    entrypoint:
+      - /dymension/start.sh
+    environment:
+      MONIKER: val2
+      CHAIN_ID: dym_2200-1
+      MNEMONIC: "relax output math high normal adapt include audit spend leader perfect husband nominee service federal neutral occur spider luxury mesh emerge head cabbage abuse"
+      ADDRESS: "dym1tar076uzxgaelzy9l5969l7k766nvygtzx7y69"
+    ports:
+      - 2101:26657
+      - 2104:1317
+      - 2102:9090
+      - 2103:9091
+      - 2105:6060
+      - 2106:9092
+      - 2100:26656
+
+  dymension3:
+    image: local:dymension
+    build:
+      context: ../../../
+      dockerfile: Dockerfile
+      args:
+        RUNNER_IMAGE: alpine:3.19
+        GO_VERSION: "1.21"
+    volumes:
+      - ./scripts/start.sh:/dymension/start.sh
+      - ./scripts/testnetify.py:/dymension/testnetify.py
+      - ./state_export.json:/dymension/state_export.json
+      - $HOME/.dymensiond-local/:/dymension/.dymensiond/
+    entrypoint:
+      - /dymension/start.sh
+    environment:
+      MONIKER: val3
+      CHAIN_ID: dym_2200-1
+      MNEMONIC: "predict alter night ugly venue speed labor exhibit embrace combine acquire ivory canal solar salad mirror invest life chapter decorate manage despair load pear"
+      ADDRESS: "dym107xu39zsfclka8ch0ly7z0eef4tzc0zsddvf9q"
+    ports:
+      - 2201:26657
+      - 2204:1317
+      - 2202:9090
+      - 2103:9091
+      - 2205:6060
+      - 2206:9092
+      - 2200:26656
