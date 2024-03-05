@@ -22,7 +22,6 @@ RUN apk add --no-cache \
     tree eudev-dev bash \
     && rm -rf /var/cache/apk/*
 
-WORKDIR cd dymension/
 
 # Build dymd binary
 RUN make build 
@@ -35,7 +34,7 @@ FROM ${RUNNER_IMAGE}
 
 COPY --from=builder ./build/dymd /usr/local/bin/
 
-ENV HOME /dymension
+ENV HOME /dymension/localnet
 WORKDIR $HOME
 
 # Add opionanted node configuration
@@ -49,6 +48,8 @@ EXPOSE 26657
 EXPOSE 1317
 EXPOSE 9090
 
-COPY ./start.sh /dymension/start.sh
-RUN chmod +x /dymension/start.sh
-ENTRYPOINT ["/dymension/start.sh"] 
+COPY ../../tests/localdymension/init.sh .
+COPY ../../tests/localdymension/start.sh .
+RUN chmod +x start.sh
+RUN chmod +x init.sh
+ENTRYPOINT ["/dymension/localnet/start.sh"] 
