@@ -11,9 +11,10 @@ services:
         GO_VERSION: "1.21"
     volumes:
       - ./scripts/start.sh:/dymension/start.sh
-      - ./scripts/testnetify.py:/dymension/testnetify.py
-      - ./state_export.json:/dymension/state_export.json
+      - ./export.json:/dymension/export.json
       - ./transform.py:/dymension/transform.py
+      - ./genesis.json:/dymension/genesis.json
+      - ./v1/:/dymension/v1/
     entrypoint:
       - /dymension/start.sh
     environment:
@@ -40,9 +41,10 @@ services:
         GO_VERSION: "1.21"
     volumes:
       - ./scripts/start.sh:/dymension/start.sh
-      - ./scripts/testnetify.py:/dymension/testnetify.py
-      - ./state_export.json:/dymension/state_export.json
-      - $HOME/.dymensiond-local/:/dymension/.dymensiond/
+      - ./genesis.json:/dymension/genesis.json
+      - ./v2/:/dymension/v2/
+      - ./export.json:/dymension/export.json
+      - ./transform.py:/dymension/transform.py
     entrypoint:
       - /dymension/start.sh
     environment:
@@ -62,16 +64,17 @@ services:
   dymension3:
     image: local:dymension
     build:
-      context: ../../../
+      context: ../../
       dockerfile: Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
     volumes:
       - ./scripts/start.sh:/dymension/start.sh
-      - ./scripts/testnetify.py:/dymension/testnetify.py
-      - ./state_export.json:/dymension/state_export.json
-      - $HOME/.dymensiond-local/:/dymension/.dymensiond/
+      - ./export.json:/dymension/export.json
+      - ./genesis.json:/dymension/genesis.json
+      - ./transform.py:/dymension/transform.py
+      - ./v3/:/dymension/v3/
     entrypoint:
       - /dymension/start.sh
     environment:

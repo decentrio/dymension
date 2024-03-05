@@ -16,6 +16,7 @@ RUN apk add --no-cache \
     build-base \
     linux-headers \
     git \
+    tree \
     && rm -rf /var/cache/apk/*
 
 RUN cd dymension/

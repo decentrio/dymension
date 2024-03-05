@@ -14,5 +14,5 @@ echo $MNE1 | dymd keys add v1 --recover --keyring-backend test --home v1
 echo $MNE2 | dymd keys add v2 --recover --keyring-backend test --home v2
 echo $MNE3 | dymd keys add v3 --recover --keyring-backend test --home v3
 
-
 python3 -u transform.py export.json genesis.json v1 v2 v3
+
