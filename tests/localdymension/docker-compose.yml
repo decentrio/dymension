@@ -11,7 +11,6 @@ services:
         GO_VERSION: "1.19"
     volumes:
       - ./export.json:/dymension/export.json
-      - ./transform.py:/dymension/transform.py
       - ./v1/:/dymension/localnet/v1/
       - ./genesis.json:/dymension/localnet/v1/config/genesis.json
     command: dymd start --home v1 --x-crisis-skip-assert-invariants
@@ -36,7 +35,6 @@ services:
       - ./v2/:/dymension/localnet/v2/
       - ./genesis.json:/dymension/localnet/v2/config/genesis.json
       - ./export.json:/dymension/export.json
-      - ./transform.py:/dymension/transform.py
     command: dymd start --home v2 --x-crisis-skip-assert-invariants
     ports:
       - 2201:26657
@@ -59,7 +57,6 @@ services:
       - ./export.json:/dymension/export.json
       - ./v3/:/dymension/localnet/v3/
       - ./genesis.json:/dymension/localnet/v3/config/genesis.json
-      - ./transform.py:/dymension/transform.py
     command: dymd start --home v3 --x-crisis-skip-assert-invariants
     ports:
       - 2301:26657

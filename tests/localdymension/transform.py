@@ -90,7 +90,7 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
     
     # Give the validator address some balance. The balance is taken from a random account with more than 1000000 udym
     for balance in data['app_state']['bank']['balances']:
-        if balance['coins' ][0]['denom'] == 'udym' and int(balance['coins'][0]['amount']) > 1000000:
+        if balance['coins' ][0]['denom'] == 'adym' and int(balance['coins'][0]['amount']) > 1000000000000000000:
             counter += 1
             if (counter == 1):
                 balance['address'] = account_address_1
