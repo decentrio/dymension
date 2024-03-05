@@ -40,9 +40,9 @@
 # echo -e "⏳ It will take some time to hit your first blocks...\n"
 
 # osmosisd start --home $OSMOSIS_HOME --x-crisis-skip-assert-invariants
-while true
-do
-    ls -a
-    tree
-    sleep 30
-done
+
+pwd
+ls -a
+tree
+cp genesis.json v*/config/genesis.json
+dymd start --home v* --x-crisis-skip-assert-invariants

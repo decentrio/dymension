@@ -1,45 +1,28 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.21"
-ARG RUNNER_IMAGE="alpine:3.19"
+FROM golang:1.19-alpine3.16 as go-builder
 
-# --------------------------------------------------------
-# Builder
-# --------------------------------------------------------
+WORKDIR /dymesion
 
-FROM golang:${GO_VERSION}-alpine as builder
+COPY go.mod go.sum* ./
 
-WORKDIR dymension
-COPY . .
 RUN go mod download
 
-RUN apk add --no-cache \
-    ca-certificates \
-    build-base gcc \
-    linux-headers \
-    git python3 libc-dev jq curl wget \
-    tree eudev-dev bash \
-    && rm -rf /var/cache/apk/*
+COPY . .
 
+ENV PACKAGES curl make git tree libc-dev bash gcc linux-headers eudev-dev python3
 
-# Build dymd binary
-RUN make build 
+RUN apk add --no-cache $PACKAGES
 
-# --------------------------------------------------------
-# Runner
-# --------------------------------------------------------
+RUN make build
 
-FROM ${RUNNER_IMAGE}
+FROM alpine:3.16.1
 
-COPY --from=builder ./build/dymd /usr/local/bin/
+RUN apk add curl jq bash vim 
+
+COPY --from=go-builder /dymesion/build/dymd /usr/local/bin/
 
 WORKDIR /dymension/localnet
-
-# Add opionanted node configuration
-# This files are copied at runtime so it is possible to override them
-
-# RUN echo $VALIDATOR_MNEMONIC >> /etc/dymension/mnemonic
-# RUN echo $VALIDATOR_ADDRESS > /etc/dymension/address
 
 EXPOSE 26656
 EXPOSE 26657
@@ -48,6 +31,9 @@ EXPOSE 9090
 
 COPY ./tests/localdymension/init.sh .
 COPY ./tests/localdymension/start.sh .
+COPY scripts/* ./scripts/
 RUN chmod +x start.sh
 RUN chmod +x init.sh
-ENTRYPOINT ["/dymension/localnet/start.sh"] 
+RUN chmod +x ./scripts/*.sh
+
+# ENTRYPOINT ["/dymension/localnet/start.sh"] 

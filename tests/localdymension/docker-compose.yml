@@ -7,19 +7,14 @@ services:
       context: ../..
       dockerfile: ./tests/localdymension/Dockerfile
       args:
-        RUNNER_IMAGE: alpine:3.19
-        GO_VERSION: "1.21"
+        RUNNER_IMAGE: alpine:3.16
+        GO_VERSION: "1.19"
     volumes:
-      - ./start.sh:/dymension/start.sh
       - ./export.json:/dymension/export.json
       - ./transform.py:/dymension/transform.py
-      - ./genesis.json:/dymension/genesis.json
-      - ./v1/:/dymension/v1/
-    environment:
-      MONIKER: val1
-      CHAIN_ID: dym_2200-1
-      MNEMONIC: "amused rural desk trick safe whip first menu worth swap enhance punch spin figure elevator abandon camera idea peace nurse coyote adjust modify produce"
-      ADDRESS: "dym1yz44rvamznay20ky3r6um9wmy4kum4xu8x8q3h"
+      - ./v1/:/dymension/localnet/v1/
+      - ./genesis.json:/dymension/localnet/v1/config/genesis.json
+    command: dymd start --home v1 --x-crisis-skip-assert-invariants
     ports:
       - 2101:26657
       - 2104:1317
@@ -35,19 +30,14 @@ services:
       context: ../..
       dockerfile: ./tests/localdymension/Dockerfile
       args:
-        RUNNER_IMAGE: alpine:3.19
-        GO_VERSION: "1.21"
+        RUNNER_IMAGE: alpine:3.16
+        GO_VERSION: "1.19"
     volumes:
-      - ./start.sh:/dymension/start.sh
-      - ./genesis.json:/dymension/genesis.json
-      - ./v2/:/dymension/v2/
+      - ./v2/:/dymension/localnet/v2/
+      - ./genesis.json:/dymension/localnet/v2/config/genesis.json
       - ./export.json:/dymension/export.json
       - ./transform.py:/dymension/transform.py
-    environment:
-      MONIKER: val2
-      CHAIN_ID: dym_2200-1
-      MNEMONIC: "relax output math high normal adapt include audit spend leader perfect husband nominee service federal neutral occur spider luxury mesh emerge head cabbage abuse"
-      ADDRESS: "dym1tar076uzxgaelzy9l5969l7k766nvygtzx7y69"
+    command: dymd start --home v2 --x-crisis-skip-assert-invariants
     ports:
       - 2201:26657
       - 2204:1317
@@ -63,19 +53,14 @@ services:
       context: ../..
       dockerfile: ./tests/localdymension/Dockerfile
       args:
-        RUNNER_IMAGE: alpine:3.19
-        GO_VERSION: "1.21"
+        RUNNER_IMAGE: alpine:3.16
+        GO_VERSION: "1.19"
     volumes:
-      - ./start.sh:/dymension/start.sh
       - ./export.json:/dymension/export.json
-      - ./genesis.json:/dymension/genesis.json
+      - ./v3/:/dymension/localnet/v3/
+      - ./genesis.json:/dymension/localnet/v3/config/genesis.json
       - ./transform.py:/dymension/transform.py
-      - ./v3/:/dymension/v3/
-    environment:
-      MONIKER: val3
-      CHAIN_ID: dym_2200-1
-      MNEMONIC: "predict alter night ugly venue speed labor exhibit embrace combine acquire ivory canal solar salad mirror invest life chapter decorate manage despair load pear"
-      ADDRESS: "dym107xu39zsfclka8ch0ly7z0eef4tzc0zsddvf9q"
+    command: dymd start --home v3 --x-crisis-skip-assert-invariants
     ports:
       - 2301:26657
       - 2304:1317
