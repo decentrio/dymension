@@ -88,3 +88,7 @@ services:
       - 2405:6060
       - 2406:9092
       - 2400:26656
+
+networks:
+  dymension-local:
+    driver: bridge
