@@ -67,6 +67,6 @@ EXPOSE 26657
 EXPOSE 1317
 EXPOSE 9090
 
-COPY ./tests/dymension/start.sh /dymension/start.sh
+COPY ./tests/localdymension/start.sh /dymension/start.sh
 RUN chmod +x /dymension/start.sh
 ENTRYPOINT ["/dymension/start.sh"] 

@@ -10,7 +10,7 @@ services:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
     volumes:
-      - ./scripts/start.sh:/dymension/start.sh
+      - ./start.sh:/dymension/start.sh
       - ./export.json:/dymension/export.json
       - ./transform.py:/dymension/transform.py
       - ./genesis.json:/dymension/genesis.json
@@ -40,7 +40,7 @@ services:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
     volumes:
-      - ./scripts/start.sh:/dymension/start.sh
+      - ./start.sh:/dymension/start.sh
       - ./genesis.json:/dymension/genesis.json
       - ./v2/:/dymension/v2/
       - ./export.json:/dymension/export.json
@@ -70,7 +70,7 @@ services:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
     volumes:
-      - ./scripts/start.sh:/dymension/start.sh
+      - ./start.sh:/dymension/start.sh
       - ./export.json:/dymension/export.json
       - ./genesis.json:/dymension/genesis.json
       - ./transform.py:/dymension/transform.py
