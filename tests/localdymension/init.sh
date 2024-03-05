@@ -16,3 +16,5 @@ echo $MNE3 | dymd keys add v3 --recover --keyring-backend test --home v3
 
 python3 -u transform.py export.json genesis.json v1 v2 v3
 
+docker-compose build
+docker-compose up
