@@ -10,8 +10,7 @@ ARG RUNNER_IMAGE="alpine:3.19"
 FROM golang:${GO_VERSION}-alpine as builder
 
 WORKDIR dymension
-COPY ../.. .
-
+COPY . .
 RUN go mod download
 
 RUN apk add --no-cache \
@@ -34,8 +33,7 @@ FROM ${RUNNER_IMAGE}
 
 COPY --from=builder ./build/dymd /usr/local/bin/
 
-ENV HOME /dymension/localnet
-WORKDIR $HOME
+WORKDIR /dymension/localnet
 
 # Add opionanted node configuration
 # This files are copied at runtime so it is possible to override them
@@ -48,8 +46,8 @@ EXPOSE 26657
 EXPOSE 1317
 EXPOSE 9090
 
-COPY ../../tests/localdymension/init.sh .
-COPY ../../tests/localdymension/start.sh .
+COPY init.sh .
+COPY start.sh .
 RUN chmod +x start.sh
 RUN chmod +x init.sh
 ENTRYPOINT ["/dymension/localnet/start.sh"] 

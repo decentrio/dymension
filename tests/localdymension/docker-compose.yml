@@ -4,8 +4,8 @@ services:
   dymension1:
     image: dymension:local
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: ./tests/localdymension/Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
@@ -32,8 +32,8 @@ services:
   dymension2:
     image: dymension:local
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: ./tests/localdymension/Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
@@ -60,8 +60,8 @@ services:
   dymension3:
     image: dymension:local
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: ./tests/localdymension/Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
         GO_VERSION: "1.21"
