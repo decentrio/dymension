@@ -11,7 +11,9 @@ services:
         GO_VERSION: "1.19"
     volumes:
       - ./v1/:/dymension/localnet/v1/
-    command: dymd start --home v1 --x-crisis-skip-assert-invariants
+    command: dymd start --home v1 --x-crisis-skip-assert-invariants --p2p.persistent_peers="dymension1:26656"
+    networks:
+      - dymension-local
     ports:
       - 2101:26657
       - 2104:1317
@@ -32,6 +34,8 @@ services:
     volumes:
       - ./v2/:/dymension/localnet/v2/
     command: dymd start --home v2 --x-crisis-skip-assert-invariants
+    networks:
+      - dymension-local
     ports:
       - 2201:26657
       - 2204:1317
@@ -52,6 +56,8 @@ services:
     volumes:
       - ./v3/:/dymension/localnet/v3/
     command: dymd start --home v3 --x-crisis-skip-assert-invariants
+    networks:
+      - dymension-local
     ports:
       - 2301:26657
       - 2304:1317
@@ -72,6 +78,8 @@ services:
     volumes:
       - ./v4/:/dymension/localnet/v4/
     command: dymd start --home v4 --x-crisis-skip-assert-invariants
+    networks:
+      - dymension-local
     ports:
       - 2401:26657
       - 2404:1317
