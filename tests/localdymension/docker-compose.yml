@@ -10,9 +10,7 @@ services:
         RUNNER_IMAGE: alpine:3.16
         GO_VERSION: "1.19"
     volumes:
-      - ./export.json:/dymension/export.json
       - ./v1/:/dymension/localnet/v1/
-      - ./genesis.json:/dymension/localnet/v1/config/genesis.json
     command: dymd start --home v1 --x-crisis-skip-assert-invariants
     ports:
       - 2101:26657
@@ -33,8 +31,6 @@ services:
         GO_VERSION: "1.19"
     volumes:
       - ./v2/:/dymension/localnet/v2/
-      - ./genesis.json:/dymension/localnet/v2/config/genesis.json
-      - ./export.json:/dymension/export.json
     command: dymd start --home v2 --x-crisis-skip-assert-invariants
     ports:
       - 2201:26657
@@ -54,9 +50,7 @@ services:
         RUNNER_IMAGE: alpine:3.16
         GO_VERSION: "1.19"
     volumes:
-      - ./export.json:/dymension/export.json
       - ./v3/:/dymension/localnet/v3/
-      - ./genesis.json:/dymension/localnet/v3/config/genesis.json
     command: dymd start --home v3 --x-crisis-skip-assert-invariants
     ports:
       - 2301:26657
@@ -66,3 +60,23 @@ services:
       - 2305:6060
       - 2306:9092
       - 2300:26656
+  
+  dymension4:
+    image: dymension:local
+    build:
+      context: ../..
+      dockerfile: ./tests/localdymension/Dockerfile
+      args:
+        RUNNER_IMAGE: alpine:3.16
+        GO_VERSION: "1.19"
+    volumes:
+      - ./v4/:/dymension/localnet/v4/
+    command: dymd start --home v4 --x-crisis-skip-assert-invariants
+    ports:
+      - 2401:26657
+      - 2404:1317
+      - 2402:9090
+      - 2403:9091
+      - 2405:6060
+      - 2406:9092
+      - 2400:26656

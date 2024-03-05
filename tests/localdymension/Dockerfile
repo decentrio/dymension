@@ -28,12 +28,3 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 EXPOSE 9090
-
-COPY ./tests/localdymension/init.sh .
-COPY ./tests/localdymension/start.sh .
-COPY scripts/* ./scripts/
-RUN chmod +x start.sh
-RUN chmod +x init.sh
-RUN chmod +x ./scripts/*.sh
-
-# ENTRYPOINT ["/dymension/localnet/start.sh"] 

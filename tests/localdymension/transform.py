@@ -10,7 +10,7 @@ def address_to_hex(address):
     json_output = get_bash_command_output(f"dymd keys parse {address} --output json --keyring-backend test --home v1")
     return "0x" + json.loads(json_output)['bytes']
 
-def update_genesis_file(input_file, output_file, key1, key2, key3):
+def update_genesis_file(input_file, output_file, key1, key2, key3, key4):
     '''
     Parameters:
     input_file: The input genesis file. This file contains the initial state and configurations of the blockchain.
@@ -21,22 +21,27 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
     consensus_address_1 = get_bash_command_output(f"dymd tendermint show-address --home {key1}")
     consensus_address_2 = get_bash_command_output(f"dymd tendermint show-address --home {key2}")
     consensus_address_3 = get_bash_command_output(f"dymd tendermint show-address --home {key3}")
+    consensus_address_4 = get_bash_command_output(f"dymd tendermint show-address --home {key4}")
 
     validator_address_1 = json.loads(get_bash_command_output(f"dymd keys show {key1} --bech val --output json --keyring-backend test --home {key1}"))["address"]
     validator_address_2 = json.loads(get_bash_command_output(f"dymd keys show {key2} --bech val --output json --keyring-backend test --home {key2}"))["address"]
     validator_address_3 = json.loads(get_bash_command_output(f"dymd keys show {key3} --bech val --output json --keyring-backend test --home {key3}"))["address"]
+    validator_address_4 = json.loads(get_bash_command_output(f"dymd keys show {key4} --bech val --output json --keyring-backend test --home {key4}"))["address"]
 
     account_address_1 = json.loads(get_bash_command_output(f"dymd keys show {key1} --bech acc --output json --keyring-backend test --home {key1}"))["address"]
     account_address_2 = json.loads(get_bash_command_output(f"dymd keys show {key2} --bech acc --output json --keyring-backend test --home {key2}"))["address"]
     account_address_3 = json.loads(get_bash_command_output(f"dymd keys show {key3} --bech acc --output json --keyring-backend test --home {key3}"))["address"]
+    account_address_4 = json.loads(get_bash_command_output(f"dymd keys show {key4} --bech acc --output json --keyring-backend test --home {key4}"))["address"]
 
     validator_pubkey_1 = json.loads(get_bash_command_output(f"dymd tendermint show-validator --home {key1}"))["key"]
     validator_pubkey_2 = json.loads(get_bash_command_output(f"dymd tendermint show-validator --home {key2}"))["key"]
     validator_pubkey_3 = json.loads(get_bash_command_output(f"dymd tendermint show-validator --home {key3}"))["key"]
+    validator_pubkey_4 = json.loads(get_bash_command_output(f"dymd tendermint show-validator --home {key4}"))["key"]
 
     account_pubkey_1 = json.loads(json.loads(get_bash_command_output(f"dymd keys show {key1} --bech acc --output json --keyring-backend test --home {key1}"))["pubkey"])["key"]
     account_pubkey_2 = json.loads(json.loads(get_bash_command_output(f"dymd keys show {key2} --bech acc --output json --keyring-backend test --home {key2}"))["pubkey"])["key"]
     account_pubkey_3 = json.loads(json.loads(get_bash_command_output(f"dymd keys show {key3} --bech acc --output json --keyring-backend test --home {key3}"))["pubkey"])["key"]
+    account_pubkey_4 = json.loads(json.loads(get_bash_command_output(f"dymd keys show {key4} --bech acc --output json --keyring-backend test --home {key4}"))["pubkey"])["key"]
 
     # Printing the consensus address, validator address, and public key
     print(f"Consensus Address 1: {consensus_address_1}")
@@ -57,6 +62,12 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
     print(f"Validator Public Key 3: {validator_pubkey_3}")
     print(f"Account Public Key 3: {account_pubkey_3}")
 
+    print(f"Consensus Address 4: {consensus_address_4}")
+    print(f"Address 4: {validator_address_4}")
+    print(f"Account Address 4: {account_address_4}")
+    print(f"Validator Public Key 4: {validator_pubkey_4}")
+    print(f"Account Public Key 4: {account_pubkey_4}")
+
     with open(input_file, 'r') as file:
         data = json.load(file)
 
@@ -70,7 +81,7 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
 
     # Update last_validator_powers
     last_total_power = int(data['app_state']['staking']['last_total_power'])
-    val_power = int(last_total_power / 3)
+    val_power = int(last_total_power / 4)
     data['app_state']['staking']['last_validator_powers'] = [
         {
             'address': validator_address_1,
@@ -82,13 +93,20 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
         },
         {
             'address': validator_address_3,
-            'power': str(last_total_power - 2 * val_power)
+            'power': str(val_power)
+        },
+        {
+            'address': validator_address_4,
+            'power': str(last_total_power - 3 * val_power)
         }
     ]
 
     counter = 0
-    
-    # Give the validator address some balance. The balance is taken from a random account with more than 1000000 udym
+    # Give the validator address some balance. The balance should first be taken from the not_bonded_tokens_pool. if it's not found than 
+    # take it from a random account with more than 1000000 udym
+    not_bonded_tokens_account = next(acc for acc in data['app_state']['auth']['accounts'] if acc.get('name') == 'not_bonded_tokens_pool')
+    not_bonded_tokens_balance = next(balance for balance in data['app_state']['bank']['balances'] if balance['address'] == not_bonded_tokens_account['base_account']['address'])
+    not_bonded_tokens_balance['address'] = account_address_4
     for balance in data['app_state']['bank']['balances']:
         if balance['coins' ][0]['denom'] == 'adym' and int(balance['coins'][0]['amount']) > 1000000000000000000:
             counter += 1
@@ -130,6 +148,14 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
                     "key": account_pubkey_3
                 }
                 print(f"ETH account: {account['base_account']}")
+            if (counter == 4):
+                previous_address_4 = account['base_account']['address']
+                account['base_account']['address'] = account_address_4
+                account['base_account']['pub_key'] = {
+                    "@type": "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+                    "key": account_pubkey_4
+                }
+                print(f"ETH account: {account['base_account']}")
                 counter = 0
                 break
 
@@ -137,6 +163,7 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
     previous_address_1_hex = address_to_hex(previous_address_1)
     previous_address_2_hex = address_to_hex(previous_address_2)
     previous_address_3_hex = address_to_hex(previous_address_3)
+    previous_address_4_hex = address_to_hex(previous_address_4)
     for account in data['app_state']['evm']['accounts']:
         if account['address'].lower() == previous_address_1_hex.lower():
             account['address'] = address_to_hex(account_address_1)
@@ -147,14 +174,17 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
         elif account['address'].lower() == previous_address_3_hex.lower():
             account['address'] = address_to_hex(account_address_3)
             counter += 1
-        if counter == 3:
+        elif account['address'].lower() == previous_address_4_hex.lower():
+            account['address'] = address_to_hex(account_address_4)
+            counter += 1
+        if counter == 4:
             break
 
     # Update the last validator in staking.validators
     bonded_tokens_account = next(acc for acc in data['app_state']['auth']['accounts'] if acc.get('name') == 'bonded_tokens_pool')
     bonded_tokens_balance = next(balance for balance in data['app_state']['bank']['balances'] if balance['address'] == bonded_tokens_account['base_account']['address'])
     bonded_tokens = int(bonded_tokens_balance['coins'][0]['amount'])
-    bonded_token = int(bonded_tokens / 3)
+    bonded_token = int(bonded_tokens / 4)
 
     if data['app_state']['staking']['validators']:
         validator_1 = data['app_state']['staking']['validators'][0]
@@ -172,10 +202,16 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
         validator_3 = data['app_state']['staking']['validators'][2]
         validator_3['consensus_pubkey']['key'] = validator_pubkey_3
         validator_3['operator_address'] = validator_address_3
-        validator_3['tokens'] = str(bonded_tokens - 2 * bonded_token)
+        validator_3['tokens'] = str(bonded_token)
         validator_3['status'] = "BOND_STATUS_BONDED"
 
-        data['app_state']['staking']['validators'] = [validator_1, validator_2, validator_3]
+        validator_4 = data['app_state']['staking']['validators'][3]
+        validator_4['consensus_pubkey']['key'] = validator_pubkey_4
+        validator_4['operator_address'] = validator_address_4
+        validator_4['tokens'] = str(bonded_tokens - 3 * bonded_token)
+        validator_4['status'] = "BOND_STATUS_BONDED"
+
+        data['app_state']['staking']['validators'] = [validator_1, validator_2, validator_3, validator_4]
 
     # Update the last element in app_state.slashing_signing_infos
     if data['app_state']['slashing']['signing_infos']:
@@ -187,6 +223,9 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
 
         data['app_state']['slashing']['signing_infos'][-3]['address'] = consensus_address_3
         data['app_state']['slashing']['signing_infos'][-3]['validator_signing_info']['address'] = consensus_address_3
+    
+        data['app_state']['slashing']['signing_infos'][-4]['address'] = consensus_address_4
+        data['app_state']['slashing']['signing_infos'][-4]['validator_signing_info']['address'] = consensus_address_4
 
     # Update voting params and min deposit
     data['app_state']['gov']['voting_params']['voting_period'] = "60s"
@@ -197,5 +236,5 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
         json.dump(data, file, indent=4)
 
 if __name__ == "__main__":
-    input_file, output_file, key1, key2, key3 = sys.argv[1:6]
-    update_genesis_file(input_file, output_file, key1, key2, key3)
+    input_file, output_file, key1, key2, key3, key4 = sys.argv[1:7]
+    update_genesis_file(input_file, output_file, key1, key2, key3, key4)
