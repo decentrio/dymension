@@ -104,7 +104,7 @@ def update_genesis_file(input_file, output_file, key1, key2, key3):
     # Iterate over the account and change the first account from type /ethermint.types.v1.EthAccount to 
     # have the address as the account_address and the key is the public key
     for account in data['app_state']['auth']['accounts']:
-        if account.get('@type') == '/c' and account["base_account"]["sequence"] != "0":
+        if account.get('@type') == '/ethermint.types.v1.EthAccount' and account["base_account"]["sequence"] != "0":
             counter += 1
             if (counter == 1):
                 previous_address_1 = account['base_account']['address']

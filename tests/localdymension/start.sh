@@ -40,5 +40,9 @@
 # echo -e "⏳ It will take some time to hit your first blocks...\n"
 
 # osmosisd start --home $OSMOSIS_HOME --x-crisis-skip-assert-invariants
-ls -a
-tree
+while true
+do
+    ls -a
+    tree
+    sleep 30
+done

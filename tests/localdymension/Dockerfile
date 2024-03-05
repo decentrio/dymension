@@ -9,41 +9,23 @@ ARG RUNNER_IMAGE="alpine:3.19"
 
 FROM golang:${GO_VERSION}-alpine as builder
 
-COPY . dymension/
+WORKDIR dymension
+COPY ../.. .
+
+RUN go mod download
 
 RUN apk add --no-cache \
     ca-certificates \
-    build-base \
+    build-base gcc \
     linux-headers \
-    git \
-    tree \
+    git python3 libc-dev jq curl wget \
+    tree eudev-dev bash \
     && rm -rf /var/cache/apk/*
 
-RUN cd dymension/
-
-# Cosmwasm - Download correct libwasmvm version
-RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | sed 's/.* //') && \
-    wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$ARCH.a \
-        -O /lib/libwasmvm_muslc.a && \
-    # verify checksum
-    wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
-    sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep libwasmvm_muslc.$ARCH | cut -d ' ' -f 1)
+WORKDIR cd dymension/
 
 # Build dymd binary
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/root/go/pkg/mod \
-    go build \
-        -mod=readonly \
-        -trimpath \
-        -tags "netgo,ledger,muslc,osusergo" \
-        -ldflags \
-            "-X github.com/cosmos/cosmos-sdk/version.Version=${GIT_REF} \
-            -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
-            -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger,muslc \
-            -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
-        -trimpath \
-        -o /go/dymension/build/dymd \
-        /go/dymension/cmd/dymd/main.go
+RUN make build 
 
 # --------------------------------------------------------
 # Runner
@@ -51,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM ${RUNNER_IMAGE}
 
-COPY --from=builder /go/dymension/build/dymd /bin/dymd
+COPY --from=builder ./build/dymd /usr/local/bin/
 
 ENV HOME /dymension
 WORKDIR $HOME
@@ -67,6 +49,6 @@ EXPOSE 26657
 EXPOSE 1317
 EXPOSE 9090
 
-COPY ./tests/localdymension/start.sh /dymension/start.sh
+COPY ./start.sh /dymension/start.sh
 RUN chmod +x /dymension/start.sh
 ENTRYPOINT ["/dymension/start.sh"] 

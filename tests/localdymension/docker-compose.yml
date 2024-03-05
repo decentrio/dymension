@@ -2,9 +2,9 @@ version: "4"
 
 services:
   dymension1:
-    image: local:dymension
+    image: dymension:local
     build:
-      context: ../../
+      context: .
       dockerfile: Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
@@ -15,8 +15,6 @@ services:
       - ./transform.py:/dymension/transform.py
       - ./genesis.json:/dymension/genesis.json
       - ./v1/:/dymension/v1/
-    entrypoint:
-      - /dymension/start.sh
     environment:
       MONIKER: val1
       CHAIN_ID: dym_2200-1
@@ -32,9 +30,9 @@ services:
       - 2100:26656
 
   dymension2:
-    image: local:dymension
+    image: dymension:local
     build:
-      context: ../../
+      context: .
       dockerfile: Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
@@ -45,8 +43,6 @@ services:
       - ./v2/:/dymension/v2/
       - ./export.json:/dymension/export.json
       - ./transform.py:/dymension/transform.py
-    entrypoint:
-      - /dymension/start.sh
     environment:
       MONIKER: val2
       CHAIN_ID: dym_2200-1
@@ -62,9 +58,9 @@ services:
       - 2200:26656
 
   dymension3:
-    image: local:dymension
+    image: dymension:local
     build:
-      context: ../../
+      context: .
       dockerfile: Dockerfile
       args:
         RUNNER_IMAGE: alpine:3.19
@@ -75,8 +71,6 @@ services:
       - ./genesis.json:/dymension/genesis.json
       - ./transform.py:/dymension/transform.py
       - ./v3/:/dymension/v3/
-    entrypoint:
-      - /dymension/start.sh
     environment:
       MONIKER: val3
       CHAIN_ID: dym_2200-1
