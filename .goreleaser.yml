@@ -1,33 +1,73 @@
-
----
-project_name: dymension
-
-env:
-  - GO111MODULE=on
+before:
+  hooks:
+    - go mod download
 
 builds:
-  - main: ./cmd/dymd
-    id: "dymd"
+  # - id: "darwin-amd64"
+  #   main: ./cmd/dymd
+  #   binary: dymd
+  #   env:
+  #     - CGO_ENABLED=1
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - amd64
+  #   flags:
+  #     - -tags=cgo netgo ledger
+  #     - -trimpath
+  #   ldflags:
+  #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
+  # - id: "darwin-arm64"
+  #   main: ./cmd/dymd
+  #   binary: dymd
+  #   env:
+  #     - CGO_ENABLED=1
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - arm64
+  #   flags:
+  #     - -tags=cgo netgo ledger
+  #     - -trimpath
+  #   ldflags:
+  #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
+  # - id: "linux-amd64"
+  #   main: ./cmd/dymd
+  #   binary: dymd
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=gcc
+  #     - CXX=g++
+  #   goos:
+  #     - linux
+  #   goarch:
+  #     - amd64
+  #   flags:
+  #     - -tags=netgo ledger cgo
+  #     - -trimpath
+  #   ldflags:
+  #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
+  - id: "linux-arm64"
+    main: ./cmd/dymd
     binary: dymd
-    mod_timestamp: "{{ .CommitTimestamp }}"
-    flags:
-      - -tags=netgo ledger
-      - -trimpath
     env:
-      - CGO_ENABLED=0
-    ldflags:
-      - -s -w -X main.commit={{.Commit}} -X main.date={{ .CommitDate }} -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version=v{{ .Version }} -X github.com/cosmos/cosmos-sdk/version.Commit={{ .Commit }} -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger -X github.com/tendermint/tendermint/version.TMCoreSemVer={{ .Env.TM_VERSION }}
+      - CGO_ENABLED=1
+      - CC=gcc
+      - CXX=g++
     goos:
       - linux
     goarch:
-      - amd64
       - arm64
+    flags:
+      - -tags=cgo
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
 
 archives:
   # disables archiving; to enable use commented lines below
   - format: binary
     name_template: "{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-
+  
 release:
   prerelease: true
   name_template: "v{{.Version}}"
@@ -41,11 +81,3 @@ snapshot:
 
 changelog:
   skip: false
-
-git:
-  # What should be used to sort tags when gathering the current and previous
-  # tags if there are more than one tag in the same commit.
-  #
-  # source: https://goreleaser.com/customization/git/
-  tag_sort: -version:refname
-  prerelease_suffix: "-rc"
