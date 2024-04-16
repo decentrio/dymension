@@ -31,29 +31,29 @@ builds:
   #     - -trimpath
   #   ldflags:
   #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
-  # - id: "linux-amd64"
-  #   main: ./cmd/dymd
-  #   binary: dymd
-  #   env:
-  #     - CGO_ENABLED=1
-  #     - CC=gcc
-  #     - CXX=g++
-  #   goos:
-  #     - linux
-  #   goarch:
-  #     - amd64
-  #   flags:
-  #     - -tags=netgo ledger cgo
-  #     - -trimpath
-  #   ldflags:
-  #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
-  - id: "linux-arm64"
+  - id: "linux-amd64"
     main: ./cmd/dymd
     binary: dymd
     env:
       - CGO_ENABLED=1
       - CC=gcc
       - CXX=g++
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -tags=netgo ledger cgo
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
+  - id: "linux-arm64"
+    main: ./cmd/dymd
+    binary: dymd
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
     goos:
       - linux
     goarch:
