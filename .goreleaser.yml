@@ -3,37 +3,39 @@ before:
     - go mod download
 
 builds:
-  - id: "darwin-amd64"
+  - id: "dymd-darwin"
     main: ./cmd/dymd
-    binary: dymd
+    binary: bin/dymd
     env:
       - CGO_ENABLED=1
+      - CC=o64-clang
+      - CXX=o64-clang++
     goos:
       - darwin
     goarch:
       - amd64
     flags:
-      - -tags=cgo netgo ledger
-      - -trimpath
+      - -tags=cgo
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
-  - id: "darwin-arm64"
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "dymd-darwin-arm64"
     main: ./cmd/dymd
-    binary: dymd
+    binary: bin/dymd
     env:
       - CGO_ENABLED=1
+      - CC=oa64-clang
+      - CXX=oa64-clang++
     goos:
       - darwin
     goarch:
       - arm64
     flags:
-      - -tags=cgo netgo ledger
-      - -trimpath
+      - -tags=cgo
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
-  - id: "linux-amd64"
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "dymd-linux"
     main: ./cmd/dymd
-    binary: dymd
+    binary: bin/dymd
     env:
       - CGO_ENABLED=1
       - CC=gcc
@@ -43,41 +45,60 @@ builds:
     goarch:
       - amd64
     flags:
-      - -tags=netgo ledger cgo
-      - -trimpath
+      - -tags=cgo
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
-  # - id: "linux-arm64"
-  #   main: ./cmd/dymd
-  #   binary: dymd
-  #   env:
-  #     - CGO_ENABLED=1
-  #     - CC=aarch64-linux-gnu-gcc
-  #     - CXX=aarch64-linux-gnu-g++
-  #   goos:
-  #     - linux
-  #   goarch:
-  #     - arm64
-  #   flags:
-  #     - -tags=cgo
-  #   ldflags:
-  #     - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}} -X github.com/tendermint/tendermint/version.TMCoreSemVer=
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "dymd-linux-arm64"
+    main: ./cmd/dymd
+    binary: bin/dymd
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    goos:
+      - linux
+    goarch:
+      - arm64
+    flags:
+      - -tags=cgo
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dymension -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "dymd-windows"
+    main: ./cmd/dymd
+    binary: bin/dymd
+    env:
+      - CGO_ENABLED=1
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
+    goos:
+      - windows
+    goarch:
+      - amd64
+    flags:
+      - -tags=cgo
+      - -buildmode=exe
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=dym -X github.com/cosmos/cosmos-sdk/version.AppName=dymd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
-  # disables archiving; to enable use commented lines below
-  - format: binary
-    name_template: "{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    builds:
+      - dymd-darwin
+      - dymd-darwin-arm64
+      - dymd-windows
+      - dymd-linux
+      - dymd-linux-arm64
   
-release:
-  prerelease: true
-  name_template: "v{{.Version}}"
-
 checksum:
-  name_template: SHA256SUMS-v{{.Version}}.txt
-  algorithm: sha256
-
-snapshot:
-  name_template: SNAPSHOT-{{ .Commit }}
-
+  name_template: 'checksums.txt'
 changelog:
-  skip: false
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+snapshot:
+  name_template: "{{ .Tag }}-next"
