@@ -27,8 +27,8 @@
         run: make release-dry-run
       - name: setup release environment
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |-
-          echo 'GITHUB_TOKEN=${{ secrets.GH_PAT }}' > .release-env
+          echo 'GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}' > .release-env
       - name: release publish
         run: make release
