@@ -5,9 +5,7 @@
     release:
       types: [created]
       
-  permissions:
-    contents: read
-    packages: write
+  permissions: write-all
         
   # This workflow creates a release using goreleaser
   # via the 'make release' command.
@@ -29,8 +27,8 @@
         run: make release-dry-run
       - name: setup release environment
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |-
-          echo 'GITHUB_TOKEN=${{secrets.GITHUB_TOKEN}}' > .release-env
+          echo 'GITHUB_TOKEN=${{ secrets.GH_PAT }}' > .release-env
       - name: release publish
         run: make release
