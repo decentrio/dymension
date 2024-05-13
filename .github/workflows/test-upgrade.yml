@@ -3,7 +3,9 @@ name: Upgrade Testing
 on: 
   push:
     branches: 
-      - main
+      - MasterPi-2124/test-upgrade
+    release:
+      types: [published]
 
 jobs:
   deploy:
@@ -15,6 +17,6 @@ jobs:
 
     - name: Update code
       run: |
-        echo "hello"
-        ip a
-        neofetch
+        ls -a
+        pwd
+        wget https://snapshots.kjnodes.com/dymension/snapshot_latest.tar.lz4
