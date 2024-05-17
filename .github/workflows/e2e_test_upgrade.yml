@@ -28,7 +28,7 @@ jobs:
 
       - name: Set environment variable
         id: set-output
-        run: 
+        run: |
           upgradeName=$(ls -d -- ./app/upgrades/v* | sort -Vr | head -n 1 | xargs basename)
           echo "upgrade=$upgradeName" >> $GITHUB_OUTPUT
       - name: Set up Docker Buildx
