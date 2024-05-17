@@ -55,4 +55,4 @@ jobs:
     uses: dymensionxyz/e2e-tests/.github/workflows/e2e-test-hub-upgrade-workflow-call.yml@2d4565e6e0777a5b309bc09b0bb0a0e9fde1e155
     with:
       dymension_ci: "e2e"
-      upgrade_name: ${{ needs.build-image.outputs.UPGRADE_NAME }}
+      upgrade_name: "${{ needs.build-image.outputs.UPGRADE_NAME }}"
