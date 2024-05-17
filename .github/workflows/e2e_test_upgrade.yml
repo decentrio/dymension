@@ -30,8 +30,7 @@ jobs:
         id: set-output
         run: 
           upgradeName=$(ls -d -- ./app/upgrades/v* | sort -Vr | head -n 1 | xargs basename)
-          echo "::set-output name=upgrade::$upgradeName"
-
+          echo "upgrade=$upgradeName" >> $GITHUB_OUTPUT
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
