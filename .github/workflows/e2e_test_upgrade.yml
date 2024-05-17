@@ -21,14 +21,16 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     outputs:
-      UPGRADE_NAME: ${{ steps.set-output.outputs }}
+      UPGRADE_NAME: ${{ steps.set-output.outputs.upgrade }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set environment variable
         id: set-output
-        run: ls -d -- ./app/upgrades/v* | sort -Vr | head -n 1 | xargs basename
+        run: 
+          upgradeName=$(ls -d -- ./app/upgrades/v* | sort -Vr | head -n 1 | xargs basename)
+          echo "::set-output name=upgrade::$upgradeName"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
