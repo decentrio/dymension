@@ -3,10 +3,10 @@ package keeper
 import (
 	"encoding/json"
 
-	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
-	db "github.com/tendermint/tm-db"
-
+	db "github.com/cometbft/cometbft-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
 )
 
 // iterator returns an iterator over all streams in the {prefix} space of state.

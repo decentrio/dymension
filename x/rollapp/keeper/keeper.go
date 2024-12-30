@@ -3,172 +3,153 @@ package keeper
 import (
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/tendermint/tendermint/libs/log"
+	"cosmossdk.io/collections"
+	"cosmossdk.io/collections/indexes"
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/dymensionxyz/dymension/v3/utils"
+
+	"github.com/dymensionxyz/dymension/v3/internal/collcompat"
 	"github.com/dymensionxyz/dymension/v3/x/rollapp/types"
 )
 
-type (
-	Keeper struct {
-		cdc        codec.BinaryCodec
-		storeKey   storetypes.StoreKey
-		memKey     storetypes.StoreKey
-		hooks      types.MultiRollappHooks
-		paramstore paramtypes.Subspace
+// finalizationQueueIndex is a set of indexes for the finalization queue.
+type finalizationQueueIndex struct {
+	// RollappIDReverseLookup is a reverse lookup index for the finalization queue.
+	// It helps to find all available heights to finalize by rollapp.
+	RollappIDReverseLookup *indexes.ReversePair[uint64, string, types.BlockHeightToFinalizationQueue]
+}
 
-		ibcclientKeeper     types.IBCClientKeeper
-		transferKeeper      types.TransferKeeper
-		channelKeeper       types.ChannelKeeper
-		bankKeeper          types.BankKeeper
-		denommetadataKeeper types.DenomMetadataKeeper
-	}
-)
+func (b finalizationQueueIndex) IndexesList() []collections.Index[collections.Pair[uint64, string], types.BlockHeightToFinalizationQueue] {
+	return []collections.Index[collections.Pair[uint64, string], types.BlockHeightToFinalizationQueue]{b.RollappIDReverseLookup}
+}
+
+type Keeper struct {
+	cdc        codec.BinaryCodec
+	storeKey   storetypes.StoreKey
+	hooks      types.MultiRollappHooks
+	paramstore paramtypes.Subspace
+	authority  string // authority is the x/gov module account
+
+	canonicalClientKeeper CanonicalLightClientKeeper
+	channelKeeper         ChannelKeeper
+	SequencerK            SequencerKeeper
+	bankKeeper            BankKeeper
+	transferKeeper        TransferKeeper
+
+	obsoleteDRSVersions     collections.KeySet[uint32]
+	registeredRollappDenoms collections.KeySet[collections.Pair[string, string]] // [ rollappID, denom ]
+	// finalizationQueue is a map from creation height and rollapp to the finalization queue.
+	// Key: (creation height, rollappID), Value: state indexes to finalize.
+	// Contains a special index that helps reverse lookup: finalization queue (all available heights) by rollapp.
+	// Index key: (rollappID, creation height), Value: state indexes to finalize.
+	finalizationQueue *collections.IndexedMap[collections.Pair[uint64, string], types.BlockHeightToFinalizationQueue, finalizationQueueIndex]
+
+	finalizePending        func(ctx sdk.Context, stateInfoIndex types.StateInfoIndex) error
+	seqToUnfinalizedHeight collections.KeySet[collections.Pair[string, uint64]]
+}
 
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey,
-	memKey storetypes.StoreKey,
+	storeKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
-	ibcclientKeeper types.IBCClientKeeper,
-	transferKeeper types.TransferKeeper,
-	channelKeeper types.ChannelKeeper,
-	bankKeeper types.BankKeeper,
-	denommetadataKeeper types.DenomMetadataKeeper,
+	channelKeeper ChannelKeeper,
+	sequencerKeeper SequencerKeeper,
+	bankKeeper BankKeeper,
+	transferKeeper TransferKeeper,
+	authority string,
+	canonicalClientKeeper CanonicalLightClientKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
-		cdc:                 cdc,
-		storeKey:            storeKey,
-		memKey:              memKey,
-		paramstore:          ps,
-		hooks:               nil,
-		ibcclientKeeper:     ibcclientKeeper,
-		transferKeeper:      transferKeeper,
-		channelKeeper:       channelKeeper,
-		bankKeeper:          bankKeeper,
-		denommetadataKeeper: denommetadataKeeper,
+	if _, err := sdk.AccAddressFromBech32(authority); err != nil {
+		panic(fmt.Errorf("invalid x/rollapp authority address: %w", err))
 	}
+
+	service := collcompat.NewKVStoreService(storeKey)
+	sb := collections.NewSchemaBuilder(service)
+
+	k := &Keeper{
+		cdc:            cdc,
+		storeKey:       storeKey,
+		paramstore:     ps,
+		hooks:          nil,
+		channelKeeper:  channelKeeper,
+		authority:      authority,
+		SequencerK:     sequencerKeeper,
+		bankKeeper:     bankKeeper,
+		transferKeeper: transferKeeper,
+		obsoleteDRSVersions: collections.NewKeySet(
+			sb,
+			collections.NewPrefix(types.ObsoleteDRSVersionsKeyPrefix),
+			"obsolete_drs_versions",
+			collections.Uint32Key,
+		),
+		registeredRollappDenoms: collections.NewKeySet[collections.Pair[string, string]](
+			sb,
+			collections.NewPrefix(types.KeyRegisteredDenomPrefix),
+			"registered_rollapp_denoms",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+		),
+		finalizationQueue: collections.NewIndexedMap(
+			sb,
+			collections.NewPrefix(types.HeightRollappToFinalizationQueueKeyPrefix),
+			"height_rollapp_to_finalization_queue",
+			collections.PairKeyCodec(collections.Uint64Key, collections.StringKey),
+			collcompat.ProtoValue[types.BlockHeightToFinalizationQueue](cdc),
+			finalizationQueueIndex{
+				RollappIDReverseLookup: indexes.NewReversePair[types.BlockHeightToFinalizationQueue](
+					sb,
+					collections.NewPrefix(types.RollappHeightToFinalizationQueueKeyPrefix),
+					"rollapp_id_reverse_lookup",
+					collections.PairKeyCodec(collections.Uint64Key, collections.StringKey),
+				),
+			},
+		),
+		finalizePending:       nil,
+		canonicalClientKeeper: canonicalClientKeeper,
+		seqToUnfinalizedHeight: collections.NewKeySet(
+			sb,
+			types.SeqToUnfinalizedHeightKeyPrefix,
+			"seq_to_unfinalized_height",
+			collections.PairKeyCodec(collections.StringKey, collections.Uint64Key),
+		),
+	}
+	k.SetFinalizePendingFn(k.finalizePendingState)
+	return k
+}
+
+func (k *Keeper) SetFinalizePendingFn(fn func(ctx sdk.Context, stateInfoIndex types.StateInfoIndex) error) {
+	k.finalizePending = fn
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-// TriggerRollappGenesisEvent triggers the genesis event for the rollapp.
-func (k Keeper) TriggerRollappGenesisEvent(ctx sdk.Context, rollapp types.Rollapp) error {
-	// Validate it hasn't been triggered yet
-	if rollapp.GenesisState.IsGenesisEvent {
-		return types.ErrGenesisEventAlreadyTriggered
-	}
-
-	if err := k.registerDenomMetadata(ctx, rollapp); err != nil {
-		return errorsmod.Wrapf(types.ErrRegisterDenomMetadataFailed, "register denom metadata: %s", err)
-	}
-
-	if err := k.mintRollappGenesisTokens(ctx, rollapp); err != nil {
-		return errorsmod.Wrapf(types.ErrMintTokensFailed, "mint rollapp genesis tokens: %s", err)
-	}
-
-	rollapp.GenesisState.IsGenesisEvent = true
-	k.SetRollapp(ctx, rollapp)
-	return nil
+func (k *Keeper) SetSequencerKeeper(sk SequencerKeeper) {
+	k.SequencerK = sk
 }
 
-// registerDenomMetadata registers the denom metadata for the IBC token
-func (k Keeper) registerDenomMetadata(ctx sdk.Context, rollapp types.Rollapp) error {
-	for i := range rollapp.TokenMetadata {
-		denomTrace := utils.GetForeignDenomTrace(rollapp.ChannelId, rollapp.TokenMetadata[i].Base)
-		traceHash := denomTrace.Hash()
-		// if the denom trace does not exist, add it
-		if !k.transferKeeper.HasDenomTrace(ctx, traceHash) {
-			k.transferKeeper.SetDenomTrace(ctx, denomTrace)
-		}
-
-		ibcBaseDenom := denomTrace.IBCDenom()
-
-		// create a new token denom metadata where it's base = ibcDenom,
-		// and the rest of the fields are taken from rollapp.metadata
-		metadata := banktypes.Metadata{
-			Description: "auto-generated metadata for " + ibcBaseDenom + " from rollapp " + rollapp.RollappId,
-			Base:        ibcBaseDenom,
-			DenomUnits:  make([]*banktypes.DenomUnit, len(rollapp.TokenMetadata[i].DenomUnits)),
-			Display:     rollapp.TokenMetadata[i].Display,
-			Name:        rollapp.TokenMetadata[i].Name,
-			Symbol:      rollapp.TokenMetadata[i].Symbol,
-			URI:         rollapp.TokenMetadata[i].URI,
-			URIHash:     rollapp.TokenMetadata[i].URIHash,
-		}
-		// Copy DenomUnits slice
-		for j, du := range rollapp.TokenMetadata[i].DenomUnits {
-			newDu := banktypes.DenomUnit{
-				Aliases:  du.Aliases,
-				Denom:    du.Denom,
-				Exponent: du.Exponent,
-			}
-			// base denom_unit should be the same as baseDenom
-			if newDu.Exponent == 0 {
-				newDu.Denom = ibcBaseDenom
-				newDu.Aliases = append(newDu.Aliases, du.Denom)
-			}
-			metadata.DenomUnits[j] = &newDu
-		}
-
-		// validate metadata
-		if validity := metadata.Validate(); validity != nil {
-			return fmt.Errorf("invalid denom metadata on genesis event: %w", validity)
-		}
-
-		// save the new token denom metadata
-		if err := k.denommetadataKeeper.CreateDenomMetadata(ctx, metadata); err != nil {
-			return fmt.Errorf("create denom metadata: %w", err)
-		}
-
-		k.Logger(ctx).Info("registered denom metadata for IBC token", "rollappID", rollapp.RollappId, "denom", ibcBaseDenom)
-	}
-	return nil
+func (k *Keeper) SetCanonicalClientKeeper(kk CanonicalLightClientKeeper) {
+	k.canonicalClientKeeper = kk
 }
 
-func (k Keeper) mintRollappGenesisTokens(ctx sdk.Context, rollapp types.Rollapp) error {
-	for _, acc := range rollapp.GenesisState.GenesisAccounts {
-		ibcBaseDenom := utils.GetForeignDenomTrace(rollapp.ChannelId, acc.Amount.Denom).IBCDenom()
-		coinsToMint := sdk.NewCoins(sdk.NewCoin(ibcBaseDenom, acc.Amount.Amount))
-
-		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, coinsToMint); err != nil {
-			return fmt.Errorf("mint coins: %w", err)
-		}
-
-		accAddress, err := sdk.AccAddressFromBech32(acc.Address)
-		if err != nil {
-			return fmt.Errorf("convert account address: %w", err)
-		}
-
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, accAddress, coinsToMint); err != nil {
-			return fmt.Errorf("send coins to account: %w", err)
-		}
-	}
-	return nil
+func (k *Keeper) SetTransferKeeper(transferKeeper TransferKeeper) {
+	k.transferKeeper = transferKeeper
 }
 
 /* -------------------------------------------------------------------------- */
 /*                                    Hooks                                   */
 /* -------------------------------------------------------------------------- */
 
-// Set the rollapp hooks
 func (k *Keeper) SetHooks(sh types.MultiRollappHooks) {
-	if k.hooks != nil {
-		panic("cannot set rollapp hooks twice")
-	}
 	k.hooks = sh
 }
 

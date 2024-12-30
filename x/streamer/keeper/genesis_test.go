@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	cometbftproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	lockuptypes "github.com/osmosis-labs/osmosis/v15/x/lockup/types"
+	bankutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/dymensionxyz/dymension/v3/app/apptesting"
-
-	bankutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	lockuptypes "github.com/dymensionxyz/dymension/v3/x/lockup/types"
 	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
 )
 
@@ -20,8 +19,8 @@ import (
 func TestStreamerExportGenesis(t *testing.T) {
 	// export genesis using default configurations
 	// ensure resulting genesis params match default params
-	app := apptesting.Setup(t, false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	app := apptesting.Setup(t)
+	ctx := app.BaseApp.NewContext(false, cometbftproto.Header{})
 	genesis := app.StreamerKeeper.ExportGenesis(ctx)
 	require.Equal(t, genesis.Params, types.DefaultGenesis().Params)
 	require.Len(t, genesis.Streams, 0)
@@ -52,7 +51,7 @@ func TestStreamerExportGenesis(t *testing.T) {
 			Weight:  math.NewInt(50),
 		},
 	}
-	streamID, err := app.StreamerKeeper.CreateStream(ctx, coins, distr, startTime, "day", 30)
+	streamID, err := app.StreamerKeeper.CreateStream(ctx, coins, distr, startTime, "day", 30, NonSponsored)
 	require.NoError(t, err)
 
 	// export genesis using default configurations
@@ -64,22 +63,25 @@ func TestStreamerExportGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	// ensure the first stream listed in the exported genesis explicitly matches expectation
+	const numEpochsPaidOver = 30
 	require.Equal(t, genesis.Streams[0], types.Stream{
 		Id:                   streamID,
 		DistributeTo:         distInfo,
 		Coins:                coins,
-		NumEpochsPaidOver:    30,
+		StartTime:            startTime.UTC(),
 		DistrEpochIdentifier: "day",
+		NumEpochsPaidOver:    numEpochsPaidOver,
 		FilledEpochs:         0,
 		DistributedCoins:     sdk.Coins(nil),
-		StartTime:            startTime.UTC(),
+		Sponsored:            false,
+		EpochCoins:           coins.QuoInt(math.NewInt(numEpochsPaidOver)),
 	})
 }
 
 // TestStreamerInitGenesis takes a genesis state and tests initializing that genesis for the streamer module.
 func TestStreamerInitGenesis(t *testing.T) {
-	app := apptesting.Setup(t, false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	app := apptesting.Setup(t)
+	ctx := app.BaseApp.NewContext(false, cometbftproto.Header{})
 
 	// checks that the default genesis parameters pass validation
 	validateGenesis := types.DefaultGenesis().Params.Validate()
@@ -105,7 +107,7 @@ func TestStreamerInitGenesis(t *testing.T) {
 
 	stream := types.Stream{
 		Id:                   1,
-		DistributeTo:         &distr,
+		DistributeTo:         distr,
 		Coins:                coins,
 		NumEpochsPaidOver:    2,
 		DistrEpochIdentifier: "day",
@@ -115,10 +117,16 @@ func TestStreamerInitGenesis(t *testing.T) {
 	}
 
 	// initialize genesis with specified parameter, the stream created earlier, and lockable durations
+	expectedPointer := types.EpochPointer{
+		StreamId:        1,
+		GaugeId:         1,
+		EpochIdentifier: "day",
+	}
 	app.StreamerKeeper.InitGenesis(ctx, types.GenesisState{
-		Params:       types.Params{},
-		Streams:      []types.Stream{stream},
-		LastStreamId: 1,
+		Params:        types.Params{},
+		Streams:       []types.Stream{stream},
+		LastStreamId:  1,
+		EpochPointers: []types.EpochPointer{expectedPointer},
 	})
 
 	// check that the stream created earlier was initialized through initGenesis and still exists on chain
@@ -127,11 +135,14 @@ func TestStreamerInitGenesis(t *testing.T) {
 	require.Len(t, streams, 1)
 	require.Equal(t, streams[0], stream)
 	require.Equal(t, lastStreamID, uint64(1))
+	ep, err := app.StreamerKeeper.GetEpochPointer(ctx, "day")
+	require.NoError(t, err)
+	require.Equal(t, expectedPointer, ep)
 }
 
 func TestStreamerOrder(t *testing.T) {
-	app := apptesting.Setup(t, false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockTime(time.Now())
+	app := apptesting.Setup(t)
+	ctx := app.BaseApp.NewContext(false, cometbftproto.Header{}).WithBlockTime(time.Now())
 
 	// checks that the default genesis parameters pass validation
 	validateGenesis := types.DefaultGenesis().Params.Validate()
@@ -156,7 +167,7 @@ func TestStreamerOrder(t *testing.T) {
 
 	stream := types.Stream{
 		Id:                   1,
-		DistributeTo:         &distr,
+		DistributeTo:         distr,
 		Coins:                coins,
 		NumEpochsPaidOver:    2,
 		DistrEpochIdentifier: "day",
@@ -168,7 +179,7 @@ func TestStreamerOrder(t *testing.T) {
 
 	stream2 := types.Stream{
 		Id:                   2,
-		DistributeTo:         &distr,
+		DistributeTo:         distr,
 		Coins:                coins,
 		NumEpochsPaidOver:    2,
 		DistrEpochIdentifier: "day",
@@ -180,7 +191,7 @@ func TestStreamerOrder(t *testing.T) {
 
 	stream3 := types.Stream{
 		Id:                   3,
-		DistributeTo:         &distr,
+		DistributeTo:         distr,
 		Coins:                coins,
 		NumEpochsPaidOver:    2,
 		DistrEpochIdentifier: "day",

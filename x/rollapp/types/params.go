@@ -4,24 +4,39 @@ import (
 	"errors"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
+	"github.com/dymensionxyz/sdk-utils/utils/uparam"
 	"gopkg.in/yaml.v2"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	// KeyRollappsEnabled is store's key for RollappsEnabled Params
-	KeyRollappsEnabled = []byte("RollappsEnabled")
-	// DeployerWhitelist is store's key for DeployerWhitelist Params
-	KeyDeployerWhitelist = []byte("DeployerWhitelist")
 	// KeyDisputePeriodInBlocks is store's key for DisputePeriodInBlocks Params
 	KeyDisputePeriodInBlocks = []byte("DisputePeriodInBlocks")
-	// default value
+
+	KeyLivenessSlashBlocks   = []byte("LivenessSlashBlocks")
+	KeyLivenessSlashInterval = []byte("LivenessSlashInterval")
+
+	// KeyAppRegistrationFee defines the key to store the cost of the app
+	KeyAppRegistrationFee = []byte("AppRegistrationFee")
+
+	KeyMinSequencerBondGlobal = []byte("KeyMinSequencerBondGlobal")
+
+	DefaultAppRegistrationFee         = commontypes.Dym(sdk.NewInt(1))
+	DefaultMinSequencerBondGlobalCoin = commontypes.Dym(sdk.NewInt(100))
+)
+
+const (
 	DefaultDisputePeriodInBlocks uint64 = 3
 	// MinDisputePeriodInBlocks is the minimum number of blocks for dispute period
 	MinDisputePeriodInBlocks uint64 = 1
+
+	DefaultLivenessSlashBlocks   = uint64(7200) // 12 hours worth of blocks at 1 block per 6 seconds
+	DefaultLivenessSlashInterval = uint64(600)  // 1 hour worth of blocks at 1 block per 6 seconds
 )
 
 // ParamKeyTable the param key table for launch module
@@ -31,21 +46,29 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	enabled bool,
 	disputePeriodInBlocks uint64,
-	deployerWhitelist []DeployerParams,
+	livenessSlashBlocks uint64,
+	livenessSlashInterval uint64,
+	appRegistrationFee sdk.Coin,
+	minSequencerBondGlobal sdk.Coin,
 ) Params {
 	return Params{
-		DisputePeriodInBlocks: disputePeriodInBlocks,
-		DeployerWhitelist:     deployerWhitelist,
-		RollappsEnabled:       enabled,
+		DisputePeriodInBlocks:  disputePeriodInBlocks,
+		LivenessSlashBlocks:    livenessSlashBlocks,
+		LivenessSlashInterval:  livenessSlashInterval,
+		AppRegistrationFee:     appRegistrationFee,
+		MinSequencerBondGlobal: minSequencerBondGlobal,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		true, DefaultDisputePeriodInBlocks, []DeployerParams{},
+		DefaultDisputePeriodInBlocks,
+		DefaultLivenessSlashBlocks,
+		DefaultLivenessSlashInterval,
+		DefaultAppRegistrationFee,
+		DefaultMinSequencerBondGlobalCoin,
 	)
 }
 
@@ -53,24 +76,62 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyDisputePeriodInBlocks, &p.DisputePeriodInBlocks, validateDisputePeriodInBlocks),
-		paramtypes.NewParamSetPair(KeyDeployerWhitelist, &p.DeployerWhitelist, validateDeployerWhitelist),
-		paramtypes.NewParamSetPair(KeyRollappsEnabled, &p.RollappsEnabled, func(_ interface{}) error { return nil }),
+		paramtypes.NewParamSetPair(KeyLivenessSlashBlocks, &p.LivenessSlashBlocks, validateLivenessSlashBlocks),
+		paramtypes.NewParamSetPair(KeyLivenessSlashInterval, &p.LivenessSlashInterval, validateLivenessSlashInterval),
+		paramtypes.NewParamSetPair(KeyAppRegistrationFee, &p.AppRegistrationFee, validateAppRegistrationFee),
+		paramtypes.NewParamSetPair(KeyMinSequencerBondGlobal, &p.MinSequencerBondGlobal, uparam.ValidateCoin),
 	}
+}
+
+func (p Params) WithDisputePeriodInBlocks(x uint64) Params {
+	p.DisputePeriodInBlocks = x
+	return p
+}
+
+func (p Params) WithLivenessSlashBlocks(x uint64) Params {
+	p.LivenessSlashBlocks = x
+	return p
+}
+
+func (p Params) WithLivenessSlashInterval(x uint64) Params {
+	p.LivenessSlashInterval = x
+	return p
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateDisputePeriodInBlocks(p.DisputePeriodInBlocks); err != nil {
-		return err
+		return errorsmod.Wrap(err, "dispute period")
 	}
 
-	return validateDeployerWhitelist(p.DeployerWhitelist)
+	if err := validateLivenessSlashBlocks(p.LivenessSlashBlocks); err != nil {
+		return errorsmod.Wrap(err, "liveness slash blocks")
+	}
+	if err := validateLivenessSlashInterval(p.LivenessSlashInterval); err != nil {
+		return errorsmod.Wrap(err, "liveness slash interval")
+	}
+
+	if err := validateAppRegistrationFee(p.AppRegistrationFee); err != nil {
+		return errorsmod.Wrap(err, "app registration fee")
+	}
+	if err := uparam.ValidateCoin(p.MinSequencerBondGlobal); err != nil {
+		return errorsmod.Wrap(err, "min sequencer bond")
+	}
+	return nil
 }
 
 // String implements the Stringer interface.
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
+}
+
+func validateLivenessSlashBlocks(i interface{}) error {
+	return uparam.ValidatePositiveUint64(i)
+}
+
+func validateLivenessSlashInterval(i interface{}) error {
+	return uparam.ValidatePositiveUint64(i)
 }
 
 // validateDisputePeriodInBlocks validates the DisputePeriodInBlocks param
@@ -87,27 +148,13 @@ func validateDisputePeriodInBlocks(v interface{}) error {
 	return nil
 }
 
-// validateDeployerWhitelist validates the DeployerWhitelist param
-func validateDeployerWhitelist(v interface{}) error {
-	deployerWhitelist, ok := v.([]DeployerParams)
+func validateAppRegistrationFee(i interface{}) error {
+	v, ok := i.(sdk.Coin)
 	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
+		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-
-	// Check for duplicated index in deployer address
-	rollappDeployerIndexMap := make(map[string]struct{})
-
-	for i, item := range deployerWhitelist {
-		// check Bech32 format
-		if _, err := sdk.AccAddressFromBech32(item.Address); err != nil {
-			return fmt.Errorf("deployerWhitelist[%d] format error: %s", i, err.Error())
-		}
-
-		// check duplicate
-		if _, ok := rollappDeployerIndexMap[item.Address]; ok {
-			return errors.New("duplicated deployer address in deployerWhitelist")
-		}
-		rollappDeployerIndexMap[item.Address] = struct{}{}
+	if !v.IsValid() {
+		return fmt.Errorf("invalid app creation cost: %s", v)
 	}
 
 	return nil

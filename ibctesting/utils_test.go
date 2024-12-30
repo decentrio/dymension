@@ -5,177 +5,229 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-
+	tmrand "github.com/cometbft/cometbft/libs/rand"
+	cometbftproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cometbfttypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	"github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-	"github.com/cosmos/ibc-go/v6/testing/mock"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
+	"github.com/cosmos/ibc-go/v7/testing/simapp"
+	lightclientkeeper "github.com/dymensionxyz/dymension/v3/x/lightclient/keeper"
+	lightclienttypes "github.com/dymensionxyz/dymension/v3/x/lightclient/types"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/dymensionxyz/dymension/v3/app"
 	"github.com/dymensionxyz/dymension/v3/app/apptesting"
+	denomutils "github.com/dymensionxyz/dymension/v3/utils/denom"
 	common "github.com/dymensionxyz/dymension/v3/x/common/types"
+	delayedackkeeper "github.com/dymensionxyz/dymension/v3/x/delayedack/keeper"
+	delayedacktypes "github.com/dymensionxyz/dymension/v3/x/delayedack/types"
+	eibctypes "github.com/dymensionxyz/dymension/v3/x/eibc/types"
 	rollappkeeper "github.com/dymensionxyz/dymension/v3/x/rollapp/keeper"
 	rollapptypes "github.com/dymensionxyz/dymension/v3/x/rollapp/types"
 	sequencertypes "github.com/dymensionxyz/dymension/v3/x/sequencer/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
-// ChainIDPrefix defines the default chain ID prefix for Evmos test chains
-var ChainIDPrefix = "evmos_9000-"
+// chainIDPrefix defines the default chain ID prefix for Evmos test chains
+var chainIDPrefix = "evmos_9000"
 
 func init() {
-	ibctesting.ChainIDPrefix = ChainIDPrefix
+	ibctesting.ChainIDPrefix = chainIDPrefix
 	ibctesting.DefaultTestingAppInit = func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		return apptesting.SetupTestingApp()
 	}
 }
 
-func ConvertToApp(chain *ibctesting.TestChain) *app.App {
-	app, ok := chain.App.(*app.App)
+func convertToApp(chain *ibctesting.TestChain) *app.App {
+	a, ok := chain.App.(*app.App)
 	require.True(chain.T, ok)
 
-	return app
+	return a
 }
 
-// IBCTestUtilSuite is a testing suite to test keeper functions.
-type IBCTestUtilSuite struct {
+// utilSuite is a testing suite to test keeper functions.
+type utilSuite struct {
 	suite.Suite
-
 	coordinator *ibctesting.Coordinator
+}
 
-	// testing chains used for convenience and readability
-	hubChain     *ibctesting.TestChain
-	cosmosChain  *ibctesting.TestChain
-	rollappChain *ibctesting.TestChain
+func hubChainID() string {
+	return ibctesting.GetChainID(1)
+}
 
-	// msg servers
-	rollappMsgServer rollapptypes.MsgServer
+func cosmosChainID() string {
+	return ibctesting.GetChainID(2)
+}
+
+func rollappChainID() string {
+	return ibctesting.GetChainID(3)
+}
+
+func (s *utilSuite) hubChain() *ibctesting.TestChain {
+	return s.coordinator.GetChain(hubChainID())
+}
+
+func (s *utilSuite) cosmosChain() *ibctesting.TestChain {
+	return s.coordinator.GetChain(cosmosChainID())
+}
+
+func (s *utilSuite) rollappChain() *ibctesting.TestChain {
+	return s.coordinator.GetChain(rollappChainID())
+}
+
+func (s *utilSuite) hubApp() *app.App {
+	return convertToApp(s.hubChain())
+}
+
+func (s *utilSuite) rollappApp() *app.App {
+	return convertToApp(s.rollappChain())
+}
+
+func (s *utilSuite) hubCtx() sdk.Context {
+	return s.hubChain().GetContext()
+}
+
+func (s *utilSuite) cosmosCtx() sdk.Context {
+	return s.cosmosChain().GetContext()
+}
+
+func (s *utilSuite) rollappCtx() sdk.Context {
+	return s.rollappChain().GetContext()
+}
+
+func (s *utilSuite) rollappMsgServer() rollapptypes.MsgServer {
+	return rollappkeeper.NewMsgServerImpl(s.hubApp().RollappKeeper)
+}
+
+func (s *utilSuite) lightclientMsgServer() lightclienttypes.MsgServer {
+	return lightclientkeeper.NewMsgServerImpl(&s.hubApp().LightClientKeeper)
 }
 
 // SetupTest creates a coordinator with 2 test chains.
-func (suite *IBCTestUtilSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 3)              // initializes 3 test chains
-	suite.hubChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))    // convenience and readability
-	suite.cosmosChain = suite.coordinator.GetChain(ibctesting.GetChainID(2)) // convenience and readability
-	suite.rollappChain = suite.newTestChainWithSingleValidator(suite.T(), suite.coordinator, ibctesting.ChainIDPrefix+"3")
-	suite.coordinator.Chains[suite.rollappChain.ChainID] = suite.rollappChain
-	// Setup msg server for the rollapp keeper
-	suite.rollappMsgServer = rollappkeeper.NewMsgServerImpl(ConvertToApp(suite.hubChain).RollappKeeper)
+func (s *utilSuite) SetupTest() {
+	// this is used as default when creating blocks.
+	// set in the block as the revision number
+	simapp.DefaultAppVersion = 0
+
+	s.coordinator = ibctesting.NewCoordinator(s.T(), 2) // initializes test chains
+	s.coordinator.Chains[rollappChainID()] = s.newTestChainWithSingleValidator(s.T(), s.coordinator, rollappChainID())
 }
 
-func (suite *IBCTestUtilSuite) CreateRollapp() {
+// CreateRollappWithFinishedGenesis creates a rollapp whose 'genesis' protocol is complete:
+// that is, they have finished all genesis transfers and their bridge is enabled.
+func (s *utilSuite) createRollappWithFinishedGenesis(canonicalChannelID string) {
+	s.createRollapp(true, &canonicalChannelID)
+}
+
+func (s *utilSuite) createRollapp(transfersEnabled bool, channelID *string) {
 	msgCreateRollapp := rollapptypes.NewMsgCreateRollapp(
-		suite.hubChain.SenderAccount.GetAddress().String(),
-		suite.rollappChain.ChainID,
-		10,
-		[]string{},
-		[]rollapptypes.TokenMetadata{
-			{
-				Name:        "RollApp RAX",
-				Symbol:      "rax",
-				Description: "The native staking token of RollApp XYZ",
-				DenomUnits: []*rollapptypes.DenomUnit{
-					{Denom: "arax", Exponent: uint32(0), Aliases: nil},
-					{Denom: "rax", Exponent: uint32(10), Aliases: []string{"RAX"}},
-				},
-				Base:    "arax",
-				Display: "rax",
-			},
+		s.hubChain().SenderAccount.GetAddress().String(),
+		rollappChainID(),
+		s.hubChain().SenderAccount.GetAddress().String(),
+		rollapptypes.DefaultMinSequencerBondGlobalCoin,
+		strings.ToLower(tmrand.Str(7)),
+		rollapptypes.Rollapp_EVM,
+		&rollapptypes.RollappMetadata{
+			Website:     "http://example.com",
+			Description: "Some description",
+			LogoUrl:     "https://dymension.xyz/logo.png",
+			Telegram:    "https://t.me/rolly",
+			X:           "https://x.dymension.xyz",
 		},
-		nil,
+		&rollapptypes.GenesisInfo{
+			GenesisChecksum: "checksum",
+			Bech32Prefix:    "ethm",
+			NativeDenom: rollapptypes.DenomMetadata{
+				Display:  "DEN",
+				Base:     "aden",
+				Exponent: 18,
+			},
+			InitialSupply: sdk.NewInt(1_000_000_000).MulRaw(1e18),
+		},
 	)
-	_, err := suite.hubChain.SendMsgs(msgCreateRollapp)
-	suite.Require().NoError(err) // message committed
+
+	err := apptesting.FundForAliasRegistration(
+		s.hubCtx(), s.hubApp().BankKeeper, *msgCreateRollapp,
+	)
+	s.Require().NoError(err)
+
+	_, err = s.hubChain().SendMsgs(msgCreateRollapp)
+	s.Require().NoError(err) // message committed
+	if channelID != nil {
+		a := s.hubApp()
+		ra := a.RollappKeeper.MustGetRollapp(s.hubCtx(), rollappChainID())
+		ra.ChannelId = *channelID
+		ra.GenesisState.TransferProofHeight = 0
+		if transfersEnabled {
+			ra.GenesisState.TransferProofHeight = 1
+		}
+		a.RollappKeeper.SetRollapp(s.hubCtx(), ra)
+	}
 }
 
-func (suite *IBCTestUtilSuite) GenesisEvent(channelID string) {
-	// add sender to deployer whitelist
-	app := ConvertToApp(suite.hubChain)
-	params := app.RollappKeeper.GetParams(suite.hubChain.GetContext())
-	params.DeployerWhitelist = []rollapptypes.DeployerParams{{Address: suite.hubChain.SenderAccount.GetAddress().String()}}
-	app.RollappKeeper.SetParams(suite.hubChain.GetContext(), params)
+// method to update the rollapp genesis info
+func (s *transferGenesisSuite) addGenesisAccounts(genesisAccounts []rollapptypes.GenesisAccount) {
+	rollapp := s.hubApp().RollappKeeper.MustGetRollapp(s.hubCtx(), rollappChainID())
+	s.Require().False(rollapp.GenesisInfo.Sealed)
 
-	msgGenesisEvent := rollapptypes.NewMsgRollappGenesisEvent(
-		suite.hubChain.SenderAccount.GetAddress().String(),
-		channelID,
-		suite.rollappChain.ChainID,
-	)
-	suite.hubChain.CurrentHeader.ProposerAddress = suite.hubChain.NextVals.Proposer.Address
-
-	_, err := suite.hubChain.SendMsgs(msgGenesisEvent)
-	suite.Require().NoError(err) // message committed
+	if rollapp.GenesisInfo.GenesisAccounts == nil {
+		rollapp.GenesisInfo.GenesisAccounts = &rollapptypes.GenesisAccounts{}
+	}
+	rollapp.GenesisInfo.GenesisAccounts.Accounts = append(rollapp.GenesisInfo.Accounts(), genesisAccounts...)
+	s.hubApp().RollappKeeper.SetRollapp(s.hubCtx(), rollapp)
 }
 
-func (suite *IBCTestUtilSuite) RegisterSequencer() {
-	bond := sequencertypes.DefaultParams().MinBond
+// necessary for tests which do not execute the entire light client flow, and just need to make transfers work
+// (all tests except the light client tests themselves)
+func (s *utilSuite) setRollappLightClientID(chainID, clientID string) {
+	s.hubApp().LightClientKeeper.SetCanonicalClient(s.hubCtx(), chainID, clientID)
+}
+
+func (s *utilSuite) registerSequencer() {
+	bond := rollapptypes.DefaultMinSequencerBondGlobalCoin
 	// fund account
-	err := bankutil.FundAccount(ConvertToApp(suite.hubChain).BankKeeper, suite.hubChain.GetContext(), suite.hubChain.SenderAccount.GetAddress(), sdk.NewCoins(bond))
-	suite.Require().Nil(err)
+	err := bankutil.FundAccount(s.hubApp().BankKeeper, s.hubCtx(), s.hubChain().SenderAccount.GetAddress(), sdk.NewCoins(bond))
+	s.Require().Nil(err)
 
 	// using validator pubkey as the dymint pubkey
-	pk, err := cryptocodec.FromTmPubKeyInterface(suite.rollappChain.Vals.Validators[0].PubKey)
-	suite.Require().Nil(err)
+	pk, err := cryptocodec.FromTmPubKeyInterface(s.rollappChain().Vals.Validators[0].PubKey)
+	s.Require().Nil(err)
 
 	msgCreateSequencer, err := sequencertypes.NewMsgCreateSequencer(
-		suite.hubChain.SenderAccount.GetAddress().String(),
+		s.hubChain().SenderAccount.GetAddress().String(),
 		pk,
-		suite.rollappChain.ChainID,
-		&sequencertypes.Description{},
-		bond,
-	)
-	suite.Require().NoError(err) // message committed
-	_, err = suite.hubChain.SendMsgs(msgCreateSequencer)
-	suite.Require().NoError(err) // message committed
-}
-
-func (suite *IBCTestUtilSuite) CreateRollappWithMetadata(denom string) {
-	displayDenom := "big" + denom
-	msgCreateRollapp := rollapptypes.NewMsgCreateRollapp(
-		suite.hubChain.SenderAccount.GetAddress().String(),
-		suite.rollappChain.ChainID,
-		10,
-		[]string{},
-		[]rollapptypes.TokenMetadata{
-			{
-				Base: denom,
-				DenomUnits: []*rollapptypes.DenomUnit{
-					{
-						Denom:    denom,
-						Exponent: 0,
-					},
-					{
-						Denom:    displayDenom,
-						Exponent: 6,
-					},
-				},
-				Description: "stake as rollapp token",
-				Display:     displayDenom,
-				Name:        displayDenom,
-				Symbol:      strings.ToUpper(displayDenom),
-			},
+		rollappChainID(),
+		&sequencertypes.SequencerMetadata{
+			Rpcs:        []string{"https://rpc.wpd.evm.rollapp.noisnemyd.xyz:443"},
+			EvmRpcs:     []string{"https://rpc.evm.rollapp.noisnemyd.xyz:443"},
+			RestApiUrls: []string{"https://api.wpd.evm.rollapp.noisnemyd.xyz:443"},
 		},
-		nil,
+		bond,
+		s.hubChain().SenderAccount.GetAddress().String(),
+		[]string{},
 	)
-	_, err := suite.hubChain.SendMsgs(msgCreateRollapp)
-	suite.Require().NoError(err) // message committed
+	s.Require().NoError(err) // message committed
+	_, err = s.hubChain().SendMsgs(msgCreateSequencer)
+	s.Require().NoError(err) // message committed
 }
 
-func (suite *IBCTestUtilSuite) UpdateRollappState(endHeight uint64) {
+func (s *utilSuite) updateRollappState(endHeight uint64) {
 	// Get the start index and start height based on the latest state info
-	rollappKeeper := ConvertToApp(suite.hubChain).RollappKeeper
-	latestStateInfoIndex, _ := rollappKeeper.GetLatestStateInfoIndex(suite.hubChain.GetContext(), suite.rollappChain.ChainID)
-	stateInfo, found := rollappKeeper.GetStateInfo(suite.hubChain.GetContext(), suite.rollappChain.ChainID, latestStateInfoIndex.Index)
+	rollappKeeper := s.hubApp().RollappKeeper
+	latestStateInfoIndex, _ := rollappKeeper.GetLatestStateInfoIndex(s.hubCtx(), rollappChainID())
+	stateInfo, found := rollappKeeper.GetStateInfo(s.hubCtx(), rollappChainID(), latestStateInfoIndex.Index)
 	startHeight := uint64(1)
 	if found {
 		startHeight = stateInfo.StartHeight + stateInfo.NumBlocks
@@ -183,36 +235,40 @@ func (suite *IBCTestUtilSuite) UpdateRollappState(endHeight uint64) {
 	numBlocks := endHeight - startHeight + 1
 	// populate the block descriptors
 	blockDescriptors := &rollapptypes.BlockDescriptors{BD: make([]rollapptypes.BlockDescriptor, numBlocks)}
-	for i := 0; i < int(numBlocks); i++ {
+	for i := uint64(0); i < numBlocks; i++ {
 		blockDescriptors.BD[i] = rollapptypes.BlockDescriptor{
-			Height:    startHeight + uint64(i),
-			StateRoot: bytes.Repeat([]byte{byte(startHeight) + byte(i)}, 32),
+			Height:     startHeight + i,
+			StateRoot:  bytes.Repeat([]byte{byte(startHeight) + byte(i)}, 32),
+			Timestamp:  time.Now().UTC(),
+			DrsVersion: 1,
 		}
 	}
 	// Update the state
 	msgUpdateState := rollapptypes.NewMsgUpdateState(
-		suite.hubChain.SenderAccount.GetAddress().String(),
-		suite.rollappChain.ChainID,
+		s.hubChain().SenderAccount.GetAddress().String(),
+		rollappChainID(),
+		"mock-da-path",
 		startHeight,
 		endHeight-startHeight+1, // numBlocks
-		"mock-da-path",
-		0,
 		blockDescriptors,
 	)
 	err := msgUpdateState.ValidateBasic()
-	suite.Require().NoError(err)
-	_, err = suite.rollappMsgServer.UpdateState(suite.hubChain.GetContext(), msgUpdateState)
-	suite.Require().NoError(err)
+	s.Require().NoError(err)
+	_, err = s.rollappMsgServer().UpdateState(s.hubCtx(), msgUpdateState)
+	s.Require().NoError(err)
 }
 
-func (suite *IBCTestUtilSuite) FinalizeRollappState(index uint64, endHeight uint64) (sdk.Events, error) {
-	rollappKeeper := ConvertToApp(suite.hubChain).RollappKeeper
-	ctx := suite.hubChain.GetContext()
+// NOTE: does not use process the queue, it uses intrusive method which breaks invariants
+func (s *utilSuite) finalizeRollappState(index uint64, endHeight uint64) (sdk.Events, error) {
+	rollappKeeper := s.hubApp().RollappKeeper
+	ctx := s.hubCtx()
 
-	stateInfoIdx := rollapptypes.StateInfoIndex{RollappId: suite.rollappChain.ChainID, Index: index}
-	stateInfo, found := rollappKeeper.GetStateInfo(ctx, suite.rollappChain.ChainID, stateInfoIdx.Index)
-	suite.Require().True(found)
+	stateInfoIdx := rollapptypes.StateInfoIndex{RollappId: rollappChainID(), Index: index}
+	stateInfo, found := rollappKeeper.GetStateInfo(ctx, rollappChainID(), stateInfoIdx.Index)
+	s.Require().True(found)
+	// this is a hack to increase the finalized height by modifying the last state info instead of submitting a new one
 	stateInfo.NumBlocks = endHeight - stateInfo.StartHeight + 1
+	stateInfo.BDs.BD = make([]rollapptypes.BlockDescriptor, stateInfo.NumBlocks)
 	stateInfo.Status = common.Status_FINALIZED
 	// update the status of the stateInfo
 	rollappKeeper.SetStateInfo(ctx, stateInfo)
@@ -220,14 +276,14 @@ func (suite *IBCTestUtilSuite) FinalizeRollappState(index uint64, endHeight uint
 	rollappKeeper.SetLatestFinalizedStateIndex(ctx, stateInfoIdx)
 	err := rollappKeeper.GetHooks().AfterStateFinalized(
 		ctx,
-		suite.rollappChain.ChainID,
+		rollappChainID(),
 		&stateInfo,
 	)
 
 	return ctx.EventManager().Events(), err
 }
 
-func (suite *IBCTestUtilSuite) NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
+func (s *utilSuite) newTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 	path := ibctesting.NewPath(chainA, chainB)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
@@ -238,24 +294,15 @@ func (suite *IBCTestUtilSuite) NewTransferPath(chainA, chainB *ibctesting.TestCh
 	return path
 }
 
-func (suite *IBCTestUtilSuite) GetRollappToHubIBCDenomFromPacket(packet channeltypes.Packet) string {
+func (s *utilSuite) getRollappToHubIBCDenomFromPacket(packet channeltypes.Packet) string {
 	var data transfertypes.FungibleTokenPacketData
-	err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
-	suite.Require().NoError(err)
-	return suite.GetIBCDenomForChannel(packet.GetDestChannel(), data.Denom)
+	err := eibctypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
+	s.Require().NoError(err)
+
+	return denomutils.GetIncomingTransferDenom(packet, data)
 }
 
-func (suite *IBCTestUtilSuite) GetIBCDenomForChannel(channel string, denom string) string {
-	// since SendPacket did not prefix the denomination, we must prefix denomination here
-	sourcePrefix := types.GetDenomPrefix("transfer", channel)
-	// NOTE: sourcePrefix contains the trailing "/"
-	prefixedDenom := sourcePrefix + denom
-	// construct the denomination trace from the full raw denomination
-	denomTrace := types.ParseDenomTrace(prefixedDenom)
-	return denomTrace.IBCDenom()
-}
-
-func (suite *IBCTestUtilSuite) newTestChainWithSingleValidator(t *testing.T, coord *ibctesting.Coordinator, chainID string) *ibctesting.TestChain {
+func (s *utilSuite) newTestChainWithSingleValidator(t *testing.T, coord *ibctesting.Coordinator, chainID string) *ibctesting.TestChain {
 	genAccs := []authtypes.GenesisAccount{}
 	genBals := []banktypes.Balance{}
 	senderAccs := []ibctesting.SenderAccount{}
@@ -264,13 +311,13 @@ func (suite *IBCTestUtilSuite) newTestChainWithSingleValidator(t *testing.T, coo
 
 	valPrivKey := mock.NewPV()
 	valPubKey, err := valPrivKey.GetPubKey()
-	suite.Require().NoError(err)
+	s.Require().NoError(err)
 
 	senderPrivKey := secp256k1.GenPrivKey()
 	acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), 0, 0)
 
 	amount, ok := sdk.NewIntFromString("10000000000000000000")
-	suite.Require().True(ok)
+	s.Require().True(ok)
 
 	// add sender account
 	balance := banktypes.Balance{
@@ -288,18 +335,18 @@ func (suite *IBCTestUtilSuite) newTestChainWithSingleValidator(t *testing.T, coo
 
 	senderAccs = append(senderAccs, senderAcc)
 
-	var validators []*tmtypes.Validator
-	signersByAddress := make(map[string]tmtypes.PrivValidator, 1)
+	var validators []*cometbfttypes.Validator
+	signersByAddress := make(map[string]cometbfttypes.PrivValidator, 1)
 
-	validators = append(validators, tmtypes.NewValidator(valPubKey, 1))
+	validators = append(validators, cometbfttypes.NewValidator(valPubKey, 1))
 
 	signersByAddress[valPubKey.Address().String()] = valPrivKey
-	valSet := tmtypes.NewValidatorSet(validators)
+	valSet := cometbfttypes.NewValidatorSet(validators)
 
 	app := ibctesting.SetupWithGenesisValSet(t, valSet, genAccs, chainID, sdk.DefaultPowerReduction, genBals...)
 
 	// create current header and call begin block
-	header := tmproto.Header{
+	header := cometbftproto.Header{
 		ChainID: chainID,
 		Height:  1,
 		Time:    coord.CurrentTime.UTC(),
@@ -328,4 +375,28 @@ func (suite *IBCTestUtilSuite) newTestChainWithSingleValidator(t *testing.T, coo
 	coord.CommitBlock(chain)
 
 	return chain
+}
+
+func (s *utilSuite) finalizeRollappPacketsByAddress(address string) sdk.Events {
+	s.T().Helper()
+	// Query all pending packets by address
+	querier := delayedackkeeper.NewQuerier(s.hubApp().DelayedAckKeeper)
+	resp, err := querier.GetPendingPacketsByAddress(s.hubCtx(), &delayedacktypes.QueryPendingPacketsByAddressRequest{
+		Address: address,
+	})
+	s.Require().NoError(err)
+	// Finalize all packets and collect events
+	events := make(sdk.Events, 0)
+	for _, packet := range resp.RollappPackets {
+		k := common.EncodePacketKey(packet.RollappPacketKey())
+		handler := s.hubApp().MsgServiceRouter().Handler(new(delayedacktypes.MsgFinalizePacketByPacketKey))
+		resp, err := handler(s.hubCtx(), &delayedacktypes.MsgFinalizePacketByPacketKey{
+			Sender:    authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			PacketKey: k,
+		})
+		s.Require().NoError(err)
+		s.Require().NotNil(resp)
+		events = append(events, resp.GetEvents()...)
+	}
+	return events
 }

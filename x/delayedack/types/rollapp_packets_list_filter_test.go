@@ -3,9 +3,11 @@ package types_test
 import (
 	"testing"
 
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/stretchr/testify/require"
+
 	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 	"github.com/dymensionxyz/dymension/v3/x/delayedack/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestByRollappID(t *testing.T) {
@@ -15,22 +17,18 @@ func TestByRollappID(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want types.RollappPacketListFilter
+		want []types.Prefix
 	}{
 		{
 			name: "Test with rollappID 1",
 			args: args{
 				rollappID: "testRollappID1",
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					}, {
-						Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					}, {
-						Start: []uint8{0x00, 0x03, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
+				}, {
+					Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
 				},
 			},
 		}, {
@@ -38,15 +36,11 @@ func TestByRollappID(t *testing.T) {
 			args: args{
 				rollappID: "",
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x2f},
-					}, {
-						Start: []uint8{0x00, 0x02, 0x2f, 0x2f},
-					}, {
-						Start: []uint8{0x00, 0x03, 0x2f, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x2f},
+				}, {
+					Start: []uint8{0x00, 0x02, 0x2f, 0x2f},
 				},
 			},
 		},
@@ -54,7 +48,7 @@ func TestByRollappID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := types.ByRollappID(tt.args.rollappID)
-			require.Equal(t, tt.want, filter)
+			require.Equal(t, tt.want, filter.Prefixes)
 		})
 	}
 }
@@ -67,7 +61,7 @@ func TestByRollappIDByStatus(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want types.RollappPacketListFilter
+		want []types.Prefix
 	}{
 		{
 			name: "Test with rollappID 1 and status PENDING",
@@ -75,11 +69,9 @@ func TestByRollappIDByStatus(t *testing.T) {
 				rollappID: "testRollappID1",
 				status:    []commontypes.Status{commontypes.Status_PENDING},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
 				},
 			},
 		}, {
@@ -88,24 +80,9 @@ func TestByRollappIDByStatus(t *testing.T) {
 				rollappID: "testRollappID1",
 				status:    []commontypes.Status{commontypes.Status_FINALIZED},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					},
-				},
-			},
-		}, {
-			name: "Test with rollappID 1 and status REVERTED",
-			args: args{
-				rollappID: "testRollappID1",
-				status:    []commontypes.Status{commontypes.Status_REVERTED},
-			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x03, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
 				},
 			},
 		}, {
@@ -114,13 +91,11 @@ func TestByRollappIDByStatus(t *testing.T) {
 				rollappID: "testRollappID1",
 				status:    []commontypes.Status{commontypes.Status_PENDING, commontypes.Status_FINALIZED},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					}, {
-						Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
+				}, {
+					Start: []uint8{0x00, 0x02, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f},
 				},
 			},
 		}, {
@@ -129,11 +104,9 @@ func TestByRollappIDByStatus(t *testing.T) {
 				rollappID: "",
 				status:    []commontypes.Status{commontypes.Status_PENDING},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x2f},
 				},
 			},
 		},
@@ -141,7 +114,7 @@ func TestByRollappIDByStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := types.ByRollappIDByStatus(tt.args.rollappID, tt.args.status...)
-			require.Equal(t, tt.want, filter)
+			require.Equal(t, tt.want, filter.Prefixes)
 		})
 	}
 }
@@ -153,18 +126,16 @@ func TestByStatus(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want types.RollappPacketListFilter
+		want []types.Prefix
 	}{
 		{
 			name: "Test with status PENDING",
 			args: args{
 				status: []commontypes.Status{commontypes.Status_PENDING},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f},
 				},
 			},
 		}, {
@@ -172,23 +143,9 @@ func TestByStatus(t *testing.T) {
 			args: args{
 				status: []commontypes.Status{commontypes.Status_FINALIZED},
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x02, 0x2f},
-					},
-				},
-			},
-		}, {
-			name: "Test with status REVERTED",
-			args: args{
-				status: []commontypes.Status{commontypes.Status_REVERTED},
-			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x03, 0x2f},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x02, 0x2f},
 				},
 			},
 		},
@@ -196,7 +153,7 @@ func TestByStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := types.ByStatus(tt.args.status...)
-			require.Equal(t, tt.want, filter)
+			require.Equal(t, tt.want, filter.Prefixes)
 		})
 	}
 }
@@ -209,7 +166,7 @@ func TestPendingByRollappIDByMaxHeight(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want types.RollappPacketListFilter
+		want []types.Prefix
 	}{
 		{
 			name: "Test with rollappID 1 and maxProofHeight 100",
@@ -217,12 +174,10 @@ func TestPendingByRollappIDByMaxHeight(t *testing.T) {
 				rollappID:      "testRollappID1",
 				maxProofHeight: 100,
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-						End:   []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+					End:   []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65},
 				},
 			},
 		}, {
@@ -231,12 +186,10 @@ func TestPendingByRollappIDByMaxHeight(t *testing.T) {
 				rollappID:      "",
 				maxProofHeight: 100,
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x0, 0x1, 0x2f, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-						End:   []uint8{0x0, 0x1, 0x2f, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x65},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x0, 0x1, 0x2f, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					End:   []uint8{0x0, 0x1, 0x2f, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x65},
 				},
 			},
 		}, {
@@ -245,12 +198,10 @@ func TestPendingByRollappIDByMaxHeight(t *testing.T) {
 				rollappID:      "testRollappID1",
 				maxProofHeight: 0,
 			},
-			want: types.RollappPacketListFilter{
-				Prefixes: []types.Prefix{
-					{
-						Start: []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-						End:   []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
-					},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					End:   []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
 				},
 			},
 		},
@@ -258,7 +209,128 @@ func TestPendingByRollappIDByMaxHeight(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := types.PendingByRollappIDByMaxHeight(tt.args.rollappID, tt.args.maxProofHeight)
-			require.Equal(t, tt.want, filter)
+			require.Equal(t, tt.want, filter.Prefixes)
 		})
 	}
+}
+
+func TestByType(t *testing.T) {
+	type args struct {
+		packetType commontypes.RollappPacket_Type
+	}
+	tests := []struct {
+		name string
+		args args
+		want []commontypes.RollappPacket
+	}{
+		{
+			name: "Test with Type ON_RECV",
+			args: args{
+				packetType: commontypes.RollappPacket_ON_RECV,
+			},
+			want: testRollappPackets[1:2],
+		}, {
+			name: "Test with Type ON_ACK",
+			args: args{
+				packetType: commontypes.RollappPacket_ON_ACK,
+			},
+			want: testRollappPackets[2:3],
+		}, {
+			name: "Test with Type ON_TIMEOUT",
+			args: args{
+				packetType: commontypes.RollappPacket_ON_TIMEOUT,
+			},
+			want: testRollappPackets[3:4],
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := types.ByTypeByStatus(tt.args.packetType)
+			var filtered []commontypes.RollappPacket
+			for _, packet := range testRollappPackets {
+				if filter.FilterFunc(packet) {
+					filtered = append(filtered, packet)
+				}
+			}
+			require.Equal(t, tt.want, filtered)
+		})
+	}
+}
+
+func TestPendingByRollappIDFromHeight(t *testing.T) {
+	type args struct {
+		rollappID  string
+		fromHeight uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want []types.Prefix
+	}{
+		{
+			name: "Test with rollappID 1 and fromHeight 100",
+			args: args{
+				rollappID:  "testRollappID1",
+				fromHeight: 100,
+			},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64},
+					End:   []uint8{0x00, 0x01, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x31, 0x2f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				},
+			},
+		},
+		{
+			name: "Test with empty rollappID and fromHeight 50",
+			args: args{
+				rollappID:  "",
+				fromHeight: 50,
+			},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x0, 0x1, 0x2f, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32},
+					End:   []uint8{0x0, 0x1, 0x2f, 0x2f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				},
+			},
+		},
+		{
+			name: "Test with rollappID 2 and fromHeight 0",
+			args: args{
+				rollappID:  "testRollappID2",
+				fromHeight: 0,
+			},
+			want: []types.Prefix{
+				{
+					Start: []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x32, 0x2f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					End:   []uint8{0x0, 0x1, 0x2f, 0x74, 0x65, 0x73, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x61, 0x70, 0x70, 0x49, 0x44, 0x32, 0x2f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := types.PendingByRollappIDFromHeight(tt.args.rollappID, tt.args.fromHeight)
+			require.Equal(t, tt.want, filter.Prefixes)
+		})
+	}
+}
+
+var testRollappPackets = []commontypes.RollappPacket{
+	{
+		RollappId: "rollapp-id-1",
+		Packet:    &channeltypes.Packet{},
+		Type:      commontypes.RollappPacket_UNDEFINED,
+	}, {
+		RollappId: "rollapp-id-2",
+		Packet:    &channeltypes.Packet{},
+		Type:      commontypes.RollappPacket_ON_RECV,
+	}, {
+		RollappId: "rollapp-id-3",
+		Packet:    &channeltypes.Packet{},
+		Type:      commontypes.RollappPacket_ON_ACK,
+	}, {
+		RollappId: "rollapp-id-4",
+		Packet:    &channeltypes.Packet{},
+		Type:      commontypes.RollappPacket_ON_TIMEOUT,
+	},
 }

@@ -14,11 +14,11 @@ import (
 	"github.com/dymensionxyz/dymension/v3/utils"
 )
 
-// NewCreateStreamCmd broadcasts a CreateStream message.
+// NewCmdSubmitTerminateStreamProposal broadcasts a CreateStream message.
 func NewCmdSubmitTerminateStreamProposal() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate-stream-proposal streamID [flags]",
-		Short: "proposal to terminate an exisiting stream",
+		Short: "proposal to terminate an existing stream",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -42,7 +42,11 @@ func NewCmdSubmitTerminateStreamProposal() *cobra.Command {
 				return err
 			}
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+			txfCli, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf := txfCli.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
 	}

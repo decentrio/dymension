@@ -1,22 +1,29 @@
 package types
 
 import (
+	"math"
+
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 )
 
-const TypeMsgUpdateState = "update_state"
+const (
+	TypeMsgUpdateState = "update_state"
+)
 
-var _ sdk.Msg = &MsgUpdateState{}
+var (
+	_ sdk.Msg            = &MsgUpdateState{}
+	_ legacytx.LegacyMsg = &MsgUpdateState{}
+)
 
-func NewMsgUpdateState(creator string, rollappId string, startHeight uint64, numBlocks uint64, dAPath string, version uint64, bDs *BlockDescriptors) *MsgUpdateState {
+func NewMsgUpdateState(creator, rollappId, dAPath string, startHeight, numBlocks uint64, bDs *BlockDescriptors) *MsgUpdateState {
 	return &MsgUpdateState{
 		Creator:     creator,
 		RollappId:   rollappId,
 		StartHeight: startHeight,
 		NumBlocks:   numBlocks,
 		DAPath:      dAPath,
-		Version:     version,
 		BDs:         *bDs,
 	}
 }
@@ -48,9 +55,13 @@ func (msg *MsgUpdateState) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	// an update cann't be with no BDs
+	// an update can't be with no BDs
 	if msg.NumBlocks == uint64(0) {
 		return errorsmod.Wrap(ErrInvalidNumBlocks, "number of blocks can not be zero")
+	}
+
+	if msg.NumBlocks > math.MaxUint64-msg.StartHeight {
+		return errorsmod.Wrapf(ErrInvalidNumBlocks, "numBlocks(%d) + startHeight(%d) exceeds max uint64", msg.NumBlocks, msg.StartHeight)
 	}
 
 	// check to see that update contains all BDs
@@ -65,6 +76,11 @@ func (msg *MsgUpdateState) ValidateBasic() error {
 
 	// check that the blocks are sequential by height
 	for bdIndex := uint64(0); bdIndex < msg.NumBlocks; bdIndex += 1 {
+
+		// Pre 3D rollapps will use zero DRS until they upgrade. Post 3D rollapps
+		// should use a non-zero version. We rely on other fraud mechanisms
+		// to catch that if it's wrong. So we don't check DRS.
+
 		if msg.BDs.BD[bdIndex].Height != msg.StartHeight+bdIndex {
 			return ErrInvalidBlockSequence
 		}

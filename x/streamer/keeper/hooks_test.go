@@ -4,16 +4,16 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/dymensionxyz/dymension/v3/app/apptesting"
 	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var _ = suite.TestingSuite(nil)
 
-var singleDistrInfo []types.DistrRecord = []types.DistrRecord{
+var singleDistrInfo = []types.DistrRecord{
 	{
 		GaugeId: 1,
 		Weight:  math.NewInt(100),
@@ -21,10 +21,12 @@ var singleDistrInfo []types.DistrRecord = []types.DistrRecord{
 }
 
 func (suite *KeeperTestSuite) TestHookOperation() {
-	suite.SetupTest()
-
 	err := suite.CreateGauge()
 	suite.Require().NoError(err)
+
+	// we must create at least one lock, otherwise distribution won't work
+	lockOwner := apptesting.CreateRandomAccounts(1)[0]
+	suite.LockTokens(lockOwner, sdk.NewCoins(sdk.NewInt64Coin("stake", 100)))
 
 	// initial module streams check
 	streams := suite.App.StreamerKeeper.GetNotFinishedStreams(suite.Ctx)
@@ -61,6 +63,10 @@ func (suite *KeeperTestSuite) TestHookOperation() {
 
 	/* ----------- call the epoch hook with month (no stream related) ----------- */
 	ctx := suite.Ctx.WithBlockTime(time.Now())
+
+	err = suite.App.StreamerKeeper.Hooks().BeforeEpochStart(ctx, "month", 0)
+	suite.Require().NoError(err)
+
 	err = suite.App.StreamerKeeper.Hooks().AfterEpochEnd(ctx, "month", 0)
 	suite.Require().NoError(err)
 
@@ -69,6 +75,9 @@ func (suite *KeeperTestSuite) TestHookOperation() {
 	suite.Require().Len(streams, 3)
 
 	/* --------- call the epoch hook with day (2 active and one future) --------- */
+	err = suite.App.StreamerKeeper.Hooks().BeforeEpochStart(ctx, "day", 0)
+	suite.Require().NoError(err)
+
 	err = suite.App.StreamerKeeper.Hooks().AfterEpochEnd(ctx, "day", 0)
 	suite.Require().NoError(err)
 
@@ -86,6 +95,9 @@ func (suite *KeeperTestSuite) TestHookOperation() {
 	suite.Require().Equal(sdk.NewCoins(sdk.NewInt64Coin("stake", 2000)).String(), gauge.Coins.String())
 
 	/* ------------------------- call weekly epoch hook ------------------------- */
+	err = suite.App.StreamerKeeper.Hooks().BeforeEpochStart(ctx, "week", 0)
+	suite.Require().NoError(err)
+
 	err = suite.App.StreamerKeeper.Hooks().AfterEpochEnd(ctx, "week", 0)
 	suite.Require().NoError(err)
 
@@ -103,6 +115,9 @@ func (suite *KeeperTestSuite) TestHookOperation() {
 	suite.Require().Equal(sdk.NewCoins(sdk.NewInt64Coin("stake", 3000)).String(), gauge.Coins.String())
 
 	/* ------- call daily epoch hook again, check both stream distirubute ------- */
+	err = suite.App.StreamerKeeper.Hooks().BeforeEpochStart(ctx, "day", 0)
+	suite.Require().NoError(err)
+
 	err = suite.App.StreamerKeeper.Hooks().AfterEpochEnd(ctx, "day", 0)
 	suite.Require().NoError(err)
 
@@ -112,6 +127,9 @@ func (suite *KeeperTestSuite) TestHookOperation() {
 	suite.Require().Equal(sdk.NewCoins(sdk.NewInt64Coin("stake", 5000)).String(), gauge.Coins.String())
 
 	/* ------- call daily epoch hook again, check both stream distirubute ------- */
+	err = suite.App.StreamerKeeper.Hooks().BeforeEpochStart(ctx, "day", 0)
+	suite.Require().NoError(err)
+
 	err = suite.App.StreamerKeeper.Hooks().AfterEpochEnd(ctx, "day", 0)
 	suite.Require().NoError(err)
 

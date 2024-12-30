@@ -3,50 +3,73 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/log"
-
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/collections"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/dymensionxyz/dymension/v3/internal/collcompat"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	"github.com/dymensionxyz/dymension/v3/x/sequencer/types"
 )
 
-type (
-	Keeper struct {
-		cdc        codec.BinaryCodec
-		storeKey   storetypes.StoreKey
-		memKey     storetypes.StoreKey
-		paramstore paramtypes.Subspace
+type Keeper struct {
+	authority string // authority is the x/gov module account
 
-		bankKeeper    types.BankKeeper
-		rollappKeeper types.RollappKeeper
-	}
-)
+	cdc            codec.BinaryCodec
+	storeKey       storetypes.StoreKey
+	bankKeeper     types.BankKeeper
+	accountK       types.AccountKeeper
+	rollappKeeper  types.RollappKeeper
+	unbondBlockers []UnbondBlocker
+	hooks          types.Hooks
+
+	dymintProposerAddrToAccAddr collections.Map[[]byte, string]
+}
 
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey,
-	memKey storetypes.StoreKey,
-	ps paramtypes.Subspace,
-
-	bankKeeper types.BankKeeper, rollappKeeper types.RollappKeeper,
+	storeKey storetypes.StoreKey,
+	bankKeeper types.BankKeeper,
+	accountK types.AccountKeeper,
+	rollappKeeper types.RollappKeeper,
+	authority string,
 ) *Keeper {
-	// set KeyTable if it has not already been set
-	if !ps.HasKeyTable() {
-		ps = ps.WithKeyTable(types.ParamKeyTable())
+	_, err := sdk.AccAddressFromBech32(authority)
+	if err != nil {
+		panic(fmt.Errorf("invalid x/sequencer authority address: %w", err))
 	}
+	service := collcompat.NewKVStoreService(storeKey)
+	sb := collections.NewSchemaBuilder(service)
 
 	return &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
-		bankKeeper: bankKeeper, rollappKeeper: rollappKeeper,
+		cdc:            cdc,
+		storeKey:       storeKey,
+		bankKeeper:     bankKeeper,
+		rollappKeeper:  rollappKeeper,
+		accountK:       accountK,
+		authority:      authority,
+		unbondBlockers: []UnbondBlocker{},
+		hooks:          types.NoOpHooks{},
+		dymintProposerAddrToAccAddr: collections.NewMap(
+			sb,
+			types.DymintProposerAddrToAccAddrKeyPrefix,
+			"dymintProposerAddrToAccAddr",
+			collections.BytesKey,
+			collections.StringValue,
+		),
 	}
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k *Keeper) SetUnbondBlockers(ubs ...UnbondBlocker) {
+	k.unbondBlockers = ubs
+}
+
+func (k *Keeper) SetHooks(h types.Hooks) {
+	k.hooks = h
 }

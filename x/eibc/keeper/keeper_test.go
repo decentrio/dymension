@@ -7,19 +7,19 @@ import (
 	"github.com/dymensionxyz/dymension/v3/x/eibc/keeper"
 	"github.com/dymensionxyz/dymension/v3/x/eibc/types"
 
+	cometbftproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 )
 
 const (
-	eibcEventType = "eibc"
-	// valid constatns used for testing
+	// valid constants used for testing
 	portid   = "testportid"
 	chanid   = "channel-0"
 	cpportid = "testcpport"
@@ -35,19 +35,19 @@ var (
 	timeoutTimestamp   = uint64(100)
 	transferPacketData = transfertypes.NewFungibleTokenPacketData(
 		sdk.DefaultBondDenom,
-		"100",
+		"1000",
 		eibcSenderAddr.String(),
 		eibcReceiverAddr.String(),
 		"",
 	)
 	packet        = channeltypes.NewPacket(transferPacketData.GetBytes(), 1, portid, chanid, cpportid, cpchanid, timeoutHeight, timeoutTimestamp)
 	rollappPacket = &commontypes.RollappPacket{
-		RollappId: "testRollappId",
+		RollappId: "rollapp_1234-1",
 		Status:    commontypes.Status_PENDING,
 		Type:      commontypes.RollappPacket_ON_RECV,
 		Packet:    &packet,
 	}
-	rollappPacketKey = commontypes.RollappPacketKey(rollappPacket)
+	rollappPacketKey = rollappPacket.RollappPacketKey()
 )
 
 type KeeperTestSuite struct {
@@ -62,8 +62,8 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	app := apptesting.Setup(suite.T(), false)
-	ctx := app.GetBaseApp().NewContext(false, tmproto.Header{})
+	app := apptesting.Setup(suite.T())
+	ctx := app.GetBaseApp().NewContext(false, cometbftproto.Header{})
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, app.InterfaceRegistry())
 	types.RegisterQueryServer(queryHelper, keeper.NewQuerier(app.EIBCKeeper))
 	queryClient := types.NewQueryClient(queryHelper)

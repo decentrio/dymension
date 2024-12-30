@@ -5,7 +5,8 @@ import (
 	fmt "fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/collections"
+	"github.com/dymensionxyz/dymension/v3/utils"
 )
 
 var _ binary.ByteOrder
@@ -22,12 +23,12 @@ const (
 
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
-
-	// MemStoreKey defines the in-memory store key
-	MemStoreKey = "mem_sequencer"
 )
 
 var (
+	// ParamsKey is the prefix for params key
+	ParamsKey = []byte{0xa0}
+
 	// KeySeparator defines the separator for keys
 	KeySeparator = "/"
 
@@ -36,25 +37,44 @@ var (
 
 	// SequencersByRollappKeyPrefix is the prefix to retrieve all SequencersByRollapp
 	SequencersByRollappKeyPrefix = []byte{0x01} // prefix/rollappId
-	BondedSequencersKeyPrefix    = []byte{0xa1}
-	UnbondedSequencersKeyPrefix  = []byte{0xa2}
-	UnbondingSequencersKeyPrefix = []byte{0xa3}
 
-	UnbondingQueueKey = []byte{0x41} // prefix for the timestamps in unbonding queue
+	// ProposerKeyPrefix is the prefix to retrieve the proposer for a rollapp
+	// This key is set when the rotation handshake is completed
+	ProposerKeyPrefix = []byte{0x02} // prefix/rollappId
+	// NextProposerKeyPrefix is the prefix to retrieve the next proposer for a rollapp
+	// This key is set only when rotation handshake is started
+	// It will be cleared after the rotation is completed
+	NextProposerKeyPrefix = []byte{0x03} // prefix/rollappId
+
+	// Prefixes for the different sequencer statuses
+
+	BondedSequencersKeyPrefix   = []byte{0xa1}
+	UnbondedSequencersKeyPrefix = []byte{0xa2}
+
+	NoticePeriodQueueKey = []byte{0x42} // prefix for the timestamps in notice period queue
+
+	DymintProposerAddrToAccAddrKeyPrefix = collections.NewPrefix([]byte{0x43})
+
+	// These keys were already used on mainnet. Don't reuse
+	_ = []byte{0xa3}
+	_ = []byte{0x41}
+	_ = []byte("MinBond")
 )
 
 /* --------------------- specific sequencer address keys -------------------- */
+
 func SequencerKey(sequencerAddress string) []byte {
 	sequencerAddrBytes := []byte(sequencerAddress)
 	return []byte(fmt.Sprintf("%s%s%s", SequencersKeyPrefix, KeySeparator, sequencerAddrBytes))
 }
 
-// SequencersByRollappKey returns the store key to retrieve a SequencersByRollapp from the index fields
+// SequencerByRollappByStatusKey returns the store key to retrieve a SequencersByRollapp from the index fields
 func SequencerByRollappByStatusKey(rollappId, seqAddr string, status OperatingStatus) []byte {
 	return append(SequencersByRollappByStatusKey(rollappId, status), []byte(seqAddr)...)
 }
 
 /* ------------------------- multiple sequencers keys ------------------------ */
+
 func SequencersKey() []byte {
 	return SequencersKeyPrefix
 }
@@ -74,31 +94,30 @@ func SequencersByRollappByStatusKey(rollappId string, status OperatingStatus) []
 		prefix = BondedSequencersKeyPrefix
 	case Unbonded:
 		prefix = UnbondedSequencersKeyPrefix
-	case Unbonding:
-		prefix = UnbondingSequencersKeyPrefix
 	}
 
 	return []byte(fmt.Sprintf("%s%s%s", SequencersByRollappKey(rollappId), KeySeparator, prefix))
 }
 
-/* -------------------------- unbonding queue keys -------------------------- */
-func UnbondingQueueByTimeKey(endTime time.Time) []byte {
-	timeBz := sdk.FormatTimeBytes(endTime)
-	prefixL := len(UnbondingQueueKey)
+/* --------------------------  queues keys -------------------------- */
 
-	bz := make([]byte, prefixL+len(timeBz))
-
-	// copy the prefix
-	copy(bz[:prefixL], UnbondingQueueKey)
-	// copy the encoded time bytes
-	copy(bz[prefixL:prefixL+len(timeBz)], timeBz)
-
-	return bz
+func NoticeQueueByTimeKey(endTime time.Time) []byte {
+	return utils.EncodeTimeToKey(NoticePeriodQueueKey, endTime)
 }
 
-func UnbondingSequencerKey(sequencerAddress string, endTime time.Time) []byte {
-	key := UnbondingQueueByTimeKey(endTime)
+func NoticeQueueBySeqTimeKey(sequencerAddress string, endTime time.Time) []byte {
+	key := NoticeQueueByTimeKey(endTime)
 	key = append(key, KeySeparator...)
 	key = append(key, []byte(sequencerAddress)...)
 	return key
+}
+
+/* --------------------- proposer and successor keys --------------------- */
+
+func ProposerByRollappKey(rollappId string) []byte {
+	return []byte(fmt.Sprintf("%s%s%s", ProposerKeyPrefix, KeySeparator, []byte(rollappId)))
+}
+
+func SuccessorByRollappKey(rollappId string) []byte {
+	return []byte(fmt.Sprintf("%s%s%s", NextProposerKeyPrefix, KeySeparator, []byte(rollappId)))
 }

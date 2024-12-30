@@ -6,13 +6,13 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/dymensionxyz/dymension/v3/app/apptesting"
 	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 	"github.com/dymensionxyz/dymension/v3/x/eibc/types"
 )
 
 func (suite *KeeperTestSuite) TestParamsQuery() {
-	suite.SetupTest()
 	wctx := sdk.WrapSDKContext(suite.Ctx)
 	params := types.DefaultParams()
 	suite.App.EIBCKeeper.SetParams(suite.Ctx, params)
@@ -23,7 +23,6 @@ func (suite *KeeperTestSuite) TestParamsQuery() {
 }
 
 func (suite *KeeperTestSuite) TestQueryDemandOrderById() {
-	suite.SetupTest()
 	keeper := suite.App.EIBCKeeper
 
 	// Validate demand order query with empty request
@@ -33,7 +32,7 @@ func (suite *KeeperTestSuite) TestQueryDemandOrderById() {
 
 	// Create a demand order with status pending
 	recipientAddress := apptesting.AddTestAddrs(suite.App, suite.Ctx, 1, math.NewInt(1000))[0]
-	demandOrder := types.NewDemandOrder(*rollappPacket, math.NewIntFromUint64(150), math.NewIntFromUint64(50), "stake", recipientAddress.String())
+	demandOrder := types.NewDemandOrder(*rollappPacket, math.NewIntFromUint64(150), math.NewIntFromUint64(50), "stake", recipientAddress.String(), 1)
 	err = keeper.SetDemandOrder(suite.Ctx, demandOrder)
 	suite.Require().NoError(err)
 
@@ -45,7 +44,6 @@ func (suite *KeeperTestSuite) TestQueryDemandOrderById() {
 }
 
 func (suite *KeeperTestSuite) TestQueryDemandOrdersByStatus() {
-	suite.SetupTest()
 	keeper := suite.App.EIBCKeeper
 
 	// Define the number of demand orders and create addresses
@@ -53,11 +51,10 @@ func (suite *KeeperTestSuite) TestQueryDemandOrdersByStatus() {
 	demandOrderAddresses := apptesting.AddTestAddrs(suite.App, suite.Ctx, demandOrdersNum, math.NewInt(1000))
 
 	// Define statuses to test
-	statuses := []commontypes.Status{commontypes.Status_PENDING, commontypes.Status_REVERTED, commontypes.Status_FINALIZED}
+	statuses := []commontypes.Status{commontypes.Status_PENDING, commontypes.Status_FINALIZED}
 
 	// Create and set demand orders for each status
 	for i, status := range statuses {
-
 		rollappPacket := &commontypes.RollappPacket{
 			RollappId:   "testRollappId" + strconv.Itoa(i),
 			Status:      status,
@@ -68,15 +65,18 @@ func (suite *KeeperTestSuite) TestQueryDemandOrdersByStatus() {
 		// Use a unique address for each demand order
 		recipientAddress := demandOrderAddresses[i].String()
 
-		demandOrder := types.NewDemandOrder(*rollappPacket, math.NewIntFromUint64(150), math.NewIntFromUint64(50), "stake", recipientAddress)
+		demandOrder := types.NewDemandOrder(*rollappPacket, math.NewIntFromUint64(150), math.NewIntFromUint64(50), "stake", recipientAddress, 1)
 		// Assert needed type of status for packet
 		demandOrder.TrackingPacketStatus = status
+		if status == commontypes.Status_FINALIZED {
+			demandOrder.FulfillerAddress = demandOrderAddresses[0].String() // simulate fulfillment
+		}
 
 		err := keeper.SetDemandOrder(suite.Ctx, demandOrder)
 		suite.Require().NoError(err)
 
 		// Query demand orders by status
-		res, err := suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: status.String()})
+		res, err := suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: status})
 		suite.Require().NoError(err)
 		suite.Require().NotNil(res.DemandOrders)
 		suite.Require().Len(res.DemandOrders, 1, fmt.Sprintf("Expected 1 demand order for status %s, but got %d", status, len(res.DemandOrders)))
@@ -84,7 +84,19 @@ func (suite *KeeperTestSuite) TestQueryDemandOrdersByStatus() {
 	}
 
 	// Query with invalid status should return an error
-	res, err := suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: "INVALID"})
+	res, err := suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: -1})
 	suite.Require().Error(err)
 	suite.Require().Nil(res)
+
+	// Query by fulfillment status: FULFILLED
+	res, err = suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: commontypes.Status_FINALIZED, FulfillmentState: types.FulfillmentState_FULFILLED})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res.DemandOrders)
+	suite.Require().Equal(true, res.DemandOrders[0].IsFulfilled(), "Expected 0 demand orders with fulfillment state fulfilled")
+
+	// Query by fulfillment status: UNFULFILLED
+	res, err = suite.queryClient.DemandOrdersByStatus(sdk.WrapSDKContext(suite.Ctx), &types.QueryDemandOrdersByStatusRequest{Status: commontypes.Status_PENDING, FulfillmentState: types.FulfillmentState_UNFULFILLED})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res.DemandOrders)
+	suite.Require().Equal(false, res.DemandOrders[0].IsFulfilled(), "Expected 0 demand orders with fulfillment state unfulfilled")
 }

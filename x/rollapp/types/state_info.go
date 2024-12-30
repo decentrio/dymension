@@ -2,12 +2,25 @@ package types
 
 import (
 	"strconv"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	common "github.com/dymensionxyz/dymension/v3/x/common/types"
 )
 
-func NewStateInfo(rollappId string, newIndex uint64, creator string, startHeight uint64, numBlocks uint64, daPath string, version uint64, height uint64, BDs BlockDescriptors) *StateInfo {
+func NewStateInfo(
+	rollappId string,
+	newIndex uint64,
+	creator string,
+	startHeight uint64,
+	numBlocks uint64,
+	daPath string,
+	height uint64,
+	BDs BlockDescriptors,
+	createdAt time.Time,
+	nextProposer string,
+) *StateInfo {
 	stateInfoIndex := StateInfoIndex{RollappId: rollappId, Index: newIndex}
 	status := common.Status_PENDING
 	return &StateInfo{
@@ -16,10 +29,11 @@ func NewStateInfo(rollappId string, newIndex uint64, creator string, startHeight
 		StartHeight:    startHeight,
 		NumBlocks:      numBlocks,
 		DAPath:         daPath,
-		Version:        version,
 		CreationHeight: height,
 		Status:         status,
 		BDs:            BDs,
+		CreatedAt:      createdAt,
+		NextProposer:   nextProposer,
 	}
 }
 
@@ -32,7 +46,26 @@ func (s *StateInfo) GetIndex() StateInfoIndex {
 }
 
 func (s *StateInfo) GetLatestHeight() uint64 {
-	return s.StartHeight + s.NumBlocks - 1
+	if s.StartHeight+s.NumBlocks > 0 {
+		return s.StartHeight + s.NumBlocks - 1
+	}
+	return 0
+}
+
+func (s *StateInfo) ContainsHeight(height uint64) bool {
+	return s.StartHeight <= height && height <= s.GetLatestHeight()
+}
+
+func (s *StateInfo) GetBlockDescriptor(height uint64) (BlockDescriptor, bool) {
+	if !s.ContainsHeight(height) {
+		return BlockDescriptor{}, false
+	}
+	return s.BDs.BD[height-s.StartHeight], true
+}
+
+func (s *StateInfo) GetLatestBlockDescriptor() BlockDescriptor {
+	// return s.BDs.BD[s.NumBlocks-1] // todo: should it be this? or the one below? using this breaks ibctesting tests
+	return s.BDs.BD[len(s.BDs.BD)-1]
 }
 
 func (s *StateInfo) GetEvents() []sdk.Attribute {
@@ -45,4 +78,10 @@ func (s *StateInfo) GetEvents() []sdk.Attribute {
 		sdk.NewAttribute(AttributeKeyStatus, s.Status.String()),
 	}
 	return eventAttributes
+}
+
+type StateInfoMeta struct {
+	StateInfo
+	Revision uint64
+	Rollapp  string
 }

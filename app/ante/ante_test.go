@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/stretchr/testify/suite"
 
+	cometbftproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -22,7 +23,6 @@ import (
 	"github.com/evmos/ethermint/ethereum/eip712"
 	"github.com/evmos/ethermint/testutil"
 	ethermint "github.com/evmos/ethermint/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/dymensionxyz/dymension/v3/app"
 	"github.com/dymensionxyz/dymension/v3/app/ante"
@@ -45,9 +45,9 @@ func TestAnteTestSuite(t *testing.T) {
 }
 
 // SetupTest setups a new test, with new app, context, and anteHandler.
-func (s *AnteTestSuite) SetupTest(isCheckTx bool) {
-	s.app = apptesting.Setup(s.T(), isCheckTx)
-	s.ctx = s.app.BaseApp.NewContext(isCheckTx, tmproto.Header{}).WithBlockHeight(1).WithChainID(apptesting.TestChainID)
+func (s *AnteTestSuite) SetupTestCheckTx(isCheckTx bool) {
+	s.app = apptesting.Setup(s.T())
+	s.ctx = s.app.BaseApp.NewContext(isCheckTx, cometbftproto.Header{}).WithBlockHeight(1).WithChainID(apptesting.TestChainID)
 
 	txConfig := s.app.GetTxConfig()
 	s.clientCtx = client.Context{}.
@@ -56,14 +56,15 @@ func (s *AnteTestSuite) SetupTest(isCheckTx bool) {
 
 	anteHandler, err := ante.NewAnteHandler(
 		ante.HandlerOptions{
-			AccountKeeper:   &s.app.AccountKeeper,
-			BankKeeper:      s.app.BankKeeper,
-			IBCKeeper:       s.app.IBCKeeper,
-			EvmKeeper:       s.app.EvmKeeper,
-			FeeMarketKeeper: s.app.FeeMarketKeeper,
-			TxFeesKeeper:    s.app.TxFeesKeeper,
-			FeegrantKeeper:  s.app.FeeGrantKeeper,
-			SignModeHandler: txConfig.SignModeHandler(),
+			AccountKeeper:     &s.app.AccountKeeper,
+			BankKeeper:        s.app.BankKeeper,
+			IBCKeeper:         s.app.IBCKeeper,
+			EvmKeeper:         s.app.EvmKeeper,
+			FeeMarketKeeper:   s.app.FeeMarketKeeper,
+			TxFeesKeeper:      s.app.TxFeesKeeper,
+			FeegrantKeeper:    s.app.FeeGrantKeeper,
+			SignModeHandler:   txConfig.SignModeHandler(),
+			LightClientKeeper: &s.app.LightClientKeeper,
 		},
 	)
 
@@ -72,7 +73,7 @@ func (s *AnteTestSuite) SetupTest(isCheckTx bool) {
 }
 
 func (suite *AnteTestSuite) TestCosmosAnteHandlerEip712() {
-	suite.SetupTest(false)
+	suite.SetupTestCheckTx(false)
 	privkey, _ := ethsecp256k1.GenerateKey()
 	key, err := privkey.ToECDSA()
 	suite.Require().NoError(err)

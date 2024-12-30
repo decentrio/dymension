@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/dymensionxyz/dymension/v3/x/rollapp/types"
 )
 
@@ -34,6 +35,26 @@ func (k Keeper) GetStateInfo(
 
 	k.cdc.MustUnmarshal(b, &val)
 	return val, true
+}
+
+func (k Keeper) GetLatestStateInfo(ctx sdk.Context,
+	rollappId string,
+) (types.StateInfo, bool) {
+	ix, ok := k.GetLatestStateInfoIndex(ctx, rollappId)
+	if !ok {
+		return types.StateInfo{}, false
+	}
+	return k.GetStateInfo(ctx, rollappId, ix.GetIndex())
+}
+
+func (k Keeper) GetLatestFinalizedStateInfo(ctx sdk.Context,
+	rollappId string,
+) (types.StateInfo, bool) {
+	ix, ok := k.GetLatestFinalizedStateIndex(ctx, rollappId)
+	if !ok {
+		return types.StateInfo{}, false
+	}
+	return k.GetStateInfo(ctx, rollappId, ix.GetIndex())
 }
 
 func (k Keeper) MustGetStateInfo(ctx sdk.Context,

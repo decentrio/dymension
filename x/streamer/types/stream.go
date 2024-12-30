@@ -3,11 +3,12 @@ package types
 import (
 	time "time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // NewStream creates a new stream struct given the required stream parameters.
-func NewStream(id uint64, distrTo *DistrInfo, coins sdk.Coins, startTime time.Time, epochIdentifier string, numEpochsPaidOver uint64) Stream {
+func NewStream(id uint64, distrTo DistrInfo, coins sdk.Coins, startTime time.Time, epochIdentifier string, numEpochsPaidOver uint64, sponsored bool) Stream {
 	return Stream{
 		Id:                   id,
 		DistributeTo:         distrTo,
@@ -17,6 +18,8 @@ func NewStream(id uint64, distrTo *DistrInfo, coins sdk.Coins, startTime time.Ti
 		NumEpochsPaidOver:    numEpochsPaidOver,
 		FilledEpochs:         0,
 		DistributedCoins:     sdk.Coins{},
+		Sponsored:            sponsored,
+		EpochCoins:           coins.QuoInt(math.NewIntFromUint64(numEpochsPaidOver)),
 	}
 }
 
@@ -36,4 +39,12 @@ func (stream Stream) IsActiveStream(curTime time.Time) bool {
 // IsFinishedStream returns true if the stream is in a finished state during the provided time.
 func (stream Stream) IsFinishedStream(curTime time.Time) bool {
 	return !stream.IsUpcomingStream(curTime) && !stream.IsActiveStream(curTime)
+}
+
+func (stream *Stream) AddDistributedCoins(coins sdk.Coins) {
+	stream.DistributedCoins = stream.DistributedCoins.Add(coins...)
+}
+
+func (stream Stream) Key() uint64 {
+	return stream.Id
 }

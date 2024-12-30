@@ -24,11 +24,13 @@ This guide will walk you through the steps required to set up and run a Dymensio
   - [Initializing `dymd`](#initializing-dymd)
   - [Running the Chain](#running-the-chain)
   - [Bootstrapping liquidity pools](#bootstrapping-liquidity-pools)
-  - [Debugging Dymension container with Devel](#debugging-dymension-container-with-devel)
   - [Adding incentives](#adding-incentives)
     - [Creating incentives streams](#creating-incentives-streams)
     - [Locking tokens](#locking-tokens)
     - [check rewards](#check-rewards)
+  - [Debugging Container](#debugging-container)
+  - [Developer](#developer)
+    - [Setup push hooks](#setup-push-hooks)
 
 ## Prerequisites
 
@@ -61,7 +63,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 - Using the setup script:
 
-  This method is preferred as it preconfigured to support [running rollapps locally](https://github.com/dymensionxyz/roller)
+  This method is preferred as it is preconfigured to support [running rollapps locally](https://github.com/dymensionxyz/roller)
 
   ```sh
   bash scripts/setup_local.sh
@@ -120,7 +122,7 @@ sh scripts/pools/pools_bootstrap.sh
 
 ### Creating incentives streams
 
-After creating the pools above, we create 2 incentive streams through gov:
+After creating the pools above, we create 3 incentive streams through gov:
 
 ```sh
 sh scripts/incentives/fund_incentives.sh
@@ -131,6 +133,8 @@ Wait for the gov proposal to pass, and validate with:
 ```sh
 dymd q streamer streams
 ```
+
+The last stream is community-driven and governed by `x/sponsorship`.
 
 ### Locking tokens
 
@@ -146,7 +150,7 @@ validate with:
 dymd q lockup module-balance
 ```
 
-### check rewards
+### Checking rewards
 
 Every minute a share of the rewards will be distributed!
 
@@ -155,8 +159,25 @@ validate with:
 ```sh
 dymd q incentives active-gauges
 
-# alternatively, watch the outpup - you will see the "amount" change every minute
+# alternatively, watch the output - you will see the "amount" change every minute
 #  watch -n1 -d "dymd q incentives active-gauges --output json | jq '.data[] | { "id": .id, "coins": .coins } '"
+```
+
+### Updating a community-driven distribution
+
+The following script casts two votes for a community-driven distribution.
+```sh
+sh scripts/incentives/sponsorship_vote.sh
+```
+
+This will change the corresponding stream distribution at the end of the current epoch.
+```sh
+dymd q streamer streams
+```
+
+The community-driven distribution may be queried with:
+```sh
+dymd q sponsorship distribution
 ```
 
 ## Debugging Container
@@ -165,7 +186,7 @@ Pre-requisite:
  Install [Docker](https://docs.docker.com/get-docker/)
  Install [VSCode](https://code.visualstudio.com/)
  Install [VSCode Go extension](https://marketplace.visualstudio.com/items?itemName=golang.go)
- Install [Devel](https://github.com/go-delve/delve)
+ Install [Delve](https://github.com/go-delve/delve)
 
 To debug, you can use the following command to run the debug container:
 
@@ -186,7 +207,7 @@ Then you can run the debugger with the following config for `launch.json` in VSC
             "mode": "remote",
             "port": 4000,
             "host": "127.0.0.1",
-            "debugAdapter": "legacy" // To be remove in the future after https://github.com/golang/vscode-go/issues/3096 is fixed
+            "debugAdapter": "legacy" // To be removed in the future after https://github.com/golang/vscode-go/issues/3096 is fixed
         }
     ]
 }
@@ -211,6 +232,14 @@ func (q Querier) Params(goCtx context.Context, req *types.QueryParamsRequest) (*
 
 Open your browser and go to `http://localhost:1318/dymensionxyz/dymension/eibc/params` and you will see debugger stop and print the value at the breakpoint.
 
----
+## Developer
 
-For support, join our [Discord](http://discord.gg/dymension) community and find us in the Developer section.
+For support, join our [Discord](http://discord.gg/dymension) community and find us in the Developer section. See [Contribution guidelines](./Contributing.md).
+
+### Setup push hooks
+
+To setup push hooks, run the following command:
+
+```sh
+./scripts/setup_push_hooks.sh
+```

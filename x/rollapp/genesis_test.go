@@ -3,97 +3,117 @@ package rollapp_test
 import (
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	keepertest "github.com/dymensionxyz/dymension/v3/testutil/keeper"
+	"github.com/dymensionxyz/dymension/v3/testutil/nullify"
 	"github.com/dymensionxyz/dymension/v3/x/rollapp"
 	"github.com/dymensionxyz/dymension/v3/x/rollapp/types"
-	"github.com/stretchr/testify/require"
 )
 
-func TestInitGenesis(t *testing.T) {
-	tests := []struct {
-		name     string
-		params   types.Params
-		rollapps []types.Rollapp
-		expPanic bool
-	}{
-		{
-			name: "only params - success",
-			params: types.Params{
-				DisputePeriodInBlocks: 11,
-				DeployerWhitelist: []types.DeployerParams{{
-					Address: "dym1wg8p6j0pxpnsvhkwfu54ql62cnrumf0v634mft",
-				}},
-				RollappsEnabled: false,
+func TestInitExportGenesis(t *testing.T) {
+	const (
+		rollappID1 = "rollapp_1234-1"
+		rollappID2 = "rollupp_1235-1"
+		appID1     = "app1"
+		appID2     = "app2"
+	)
+
+	genesisState := types.GenesisState{
+		Params: types.DefaultParams(),
+
+		RollappList: []types.Rollapp{
+			{
+				RollappId: rollappID1,
+				GenesisInfo: types.GenesisInfo{
+					InitialSupply: sdk.NewInt(1000),
+				},
 			},
-			rollapps: []types.Rollapp{},
-			expPanic: false,
+			{
+				RollappId: rollappID2,
+				GenesisInfo: types.GenesisInfo{
+					InitialSupply: sdk.NewInt(1001),
+				},
+			},
 		},
-		{
-			name: "params and rollapps - panic",
-			params: types.Params{
-				DisputePeriodInBlocks: 11,
-				DeployerWhitelist: []types.DeployerParams{{
-					Address: "dym1wg8p6j0pxpnsvhkwfu54ql62cnrumf0v634mft",
-				}},
-				RollappsEnabled: false,
+		StateInfoList: []types.StateInfo{
+			{
+				StateInfoIndex: types.StateInfoIndex{
+					RollappId: rollappID1,
+					Index:     0,
+				},
 			},
-			rollapps: []types.Rollapp{{RollappId: "0"}},
-			expPanic: true,
+			{
+				StateInfoIndex: types.StateInfoIndex{
+					RollappId: rollappID2,
+					Index:     1,
+				},
+			},
+		},
+		LatestStateInfoIndexList: []types.StateInfoIndex{
+			{
+				RollappId: rollappID1,
+			},
+			{
+				RollappId: rollappID2,
+			},
+		},
+		BlockHeightToFinalizationQueueList: []types.BlockHeightToFinalizationQueue{
+			{
+				CreationHeight: 0,
+			},
+			{
+				CreationHeight: 1,
+			},
+		},
+		AppList: []types.App{
+			{
+				Name:      appID1,
+				RollappId: rollappID1,
+			},
+			{
+				Name:      appID2,
+				RollappId: rollappID2,
+			},
+		},
+		SequencerHeightPairs: []types.SequencerHeightPair{
+			{
+				Sequencer: "seq1",
+				Height:    0,
+			},
+			{
+				Sequencer: "seq2",
+				Height:    1,
+			},
+			{
+				Sequencer: "seq3",
+				Height:    2,
+			},
+		},
+		LivenessEvents: []types.LivenessEvent{
+			{
+				RollappId: rollappID2,
+				HubHeight: 42,
+			},
+			{
+				RollappId: rollappID1,
+				HubHeight: 44,
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			genesisState := types.GenesisState{Params: tt.params, RollappList: tt.rollapps}
-			k, ctx := keepertest.RollappKeeper(t)
-			if tt.expPanic {
-				require.Panics(t, func() {
-					rollapp.InitGenesis(ctx, *k, genesisState)
-				})
-			} else {
-				rollapp.InitGenesis(ctx, *k, genesisState)
-				params := k.GetParams(ctx)
-				require.Equal(t, genesisState.Params, params)
-			}
-		})
-	}
-}
-
-func TestExportGenesis(t *testing.T) {
-	params := types.Params{
-		DisputePeriodInBlocks: 11,
-		DeployerWhitelist:     []types.DeployerParams{{Address: "dym1wg8p6j0pxpnsvhkwfu54ql62cnrumf0v634mft"}},
-		RollappsEnabled:       false,
-	}
-	rollappList := []types.Rollapp{{RollappId: "0"}, {RollappId: "1"}}
-	stateInfoList := []types.StateInfo{
-		{StateInfoIndex: types.StateInfoIndex{RollappId: "0", Index: 0}},
-		{StateInfoIndex: types.StateInfoIndex{RollappId: "1", Index: 1}},
-	}
-	latestStateInfoIndexList := []types.StateInfoIndex{{RollappId: "0"}, {RollappId: "1"}}
-	blockHeightToFinalizationQueueList := []types.BlockHeightToFinalizationQueue{{CreationHeight: 0}, {CreationHeight: 1}}
-	// Set the items in the keeper
 	k, ctx := keepertest.RollappKeeper(t)
-	for _, rollapp := range rollappList {
-		k.SetRollapp(ctx, rollapp)
-	}
-	for _, stateInfo := range stateInfoList {
-		k.SetStateInfo(ctx, stateInfo)
-	}
-	for _, latestStateInfoIndex := range latestStateInfoIndexList {
-		k.SetLatestStateInfoIndex(ctx, latestStateInfoIndex)
-	}
-	for _, blockHeightToFinalizationQueue := range blockHeightToFinalizationQueueList {
-		k.SetBlockHeightToFinalizationQueue(ctx, blockHeightToFinalizationQueue)
-	}
-	k.SetParams(ctx, params)
-	// Verify the exported genesis state
+	rollapp.InitGenesis(ctx, *k, genesisState)
 	got := rollapp.ExportGenesis(ctx, *k)
 	require.NotNil(t, got)
-	// Validate the exported genesis state
-	require.Equal(t, params, got.Params)
-	require.ElementsMatch(t, rollappList, got.RollappList)
-	require.ElementsMatch(t, stateInfoList, got.StateInfoList)
-	require.ElementsMatch(t, latestStateInfoIndexList, got.LatestStateInfoIndexList)
-	require.ElementsMatch(t, blockHeightToFinalizationQueueList, got.BlockHeightToFinalizationQueueList)
+
+	nullify.Fill(genesisState)
+	nullify.Fill(*got)
+
+	require.ElementsMatch(t, genesisState.RollappList, got.RollappList)
+	require.ElementsMatch(t, genesisState.StateInfoList, got.StateInfoList)
+	require.ElementsMatch(t, genesisState.LatestStateInfoIndexList, got.LatestStateInfoIndexList)
+	require.ElementsMatch(t, genesisState.BlockHeightToFinalizationQueueList, got.BlockHeightToFinalizationQueueList)
+	require.ElementsMatch(t, genesisState.AppList, got.AppList)
 }

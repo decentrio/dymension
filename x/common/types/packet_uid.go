@@ -1,8 +1,8 @@
 package types
 
-import fmt "fmt"
+import "fmt"
 
-// PacketUID is a unique identifier for an Rollapp IBC packet on the hub
+// PacketUID is a unique identifier for a Rollapp IBC packet on the hub
 type PacketUID struct {
 	Type              RollappPacket_Type
 	RollappHubPort    string

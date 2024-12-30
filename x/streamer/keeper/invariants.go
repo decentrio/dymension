@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
 )
 
@@ -15,7 +16,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 	ir.RegisterRoute(types.ModuleName, "streams", StreamsInvariant(k))
 }
 
-// AllInvariants runs all invariants of the x/streamer module.
+// DO NOT DELETE
 func AllInvariants(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		res, stop := LastStreamIdInvariant(k)(ctx)

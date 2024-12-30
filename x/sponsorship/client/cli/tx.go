@@ -1,0 +1,130 @@
+package cli
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"cosmossdk.io/math"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/spf13/cobra"
+
+	"github.com/dymensionxyz/dymension/v3/x/sponsorship/types"
+)
+
+// GetTxCmd returns the transaction commands for this module.
+func GetTxCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      fmt.Sprintf("%s transactions subcommands", types.ModuleName),
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	cmd.AddCommand(CmdVote())
+	cmd.AddCommand(CmdRevokeVote())
+
+	return cmd
+}
+
+func CmdVote() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "vote [gauge-weights] --from <voter>",
+		Short:   "Submit a vote for gauges",
+		Example: "dymd tx sponsorship vote gauge1=30,gauge2=40,abstain=30 --from my_validator",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			weights, err := ParseGaugeWeights(args[0])
+			if err != nil {
+				return fmt.Errorf("invalid gauge weights: %w", err)
+			}
+
+			msg := types.MsgVote{
+				Voter:   clientCtx.GetFromAddress().String(),
+				Weights: weights,
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdRevokeVote() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "revoke-vote --from <voter>",
+		Short:   "Revoke a previously submitted vote for gauges",
+		Example: "dymd tx sponsorship revoke-vote --from my_validator",
+		Args:    cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			msg := types.MsgRevokeVote{
+				Voter: clientCtx.GetFromAddress().String(),
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func ParseGaugeWeights(inputWeights string) ([]types.GaugeWeight, error) {
+	if inputWeights == "" {
+		return nil, fmt.Errorf("input weights must not be empty")
+	}
+
+	var weights []types.GaugeWeight
+	pairs := strings.Split(inputWeights, ",")
+
+	for _, pair := range pairs {
+		idValue := strings.Split(pair, "=")
+		if len(idValue) != 2 {
+			return nil, fmt.Errorf("invalid gauge weight format: %s", pair)
+		}
+
+		gaugeID, err := strconv.ParseUint(idValue[0], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid gauge ID '%s': %w", idValue[0], err)
+		}
+
+		weight, ok := math.NewIntFromString(idValue[1])
+		if !ok {
+			return nil, fmt.Errorf("invalid gauge weight '%s'", idValue[1])
+		}
+
+		if weight.LT(types.MinAllocationWeight) || weight.GT(types.MaxAllocationWeight) {
+			return nil, fmt.Errorf("weight must be between 1 and 100 * 10^18, got %s", weight)
+		}
+
+		weights = append(weights, types.GaugeWeight{
+			GaugeId: gaugeID,
+			Weight:  weight,
+		})
+	}
+
+	err := types.ValidateGaugeWeights(weights)
+	if err != nil {
+		return nil, fmt.Errorf("invalid gauge weights: %w", err)
+	}
+
+	return weights, nil
+}

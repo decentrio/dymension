@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/osmosis-labs/osmosis/v15/osmoutils"
-	epochstypes "github.com/osmosis-labs/osmosis/v15/x/epochs/types"
-	"github.com/tendermint/tendermint/libs/log"
-
-	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
-
+	"cosmossdk.io/collections"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/osmosis-labs/osmosis/v15/osmoutils"
+	epochstypes "github.com/osmosis-labs/osmosis/v15/x/epochs/types"
+
+	"github.com/dymensionxyz/dymension/v3/internal/collcompat"
+	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
 )
 
 // Keeper provides a way to manage streamer module storage.
@@ -24,13 +26,28 @@ type Keeper struct {
 	ek         types.EpochKeeper
 	ak         types.AccountKeeper
 	ik         types.IncentivesKeeper
+	sk         types.SponsorshipKeeper
+
+	// epochPointers holds a mapping from the epoch identifier to EpochPointer.
+	epochPointers collections.Map[string, types.EpochPointer]
 }
 
 // NewKeeper returns a new instance of the incentive module keeper struct.
-func NewKeeper(storeKey storetypes.StoreKey, paramSpace paramtypes.Subspace, bk types.BankKeeper, ek types.EpochKeeper, ak types.AccountKeeper, ik types.IncentivesKeeper) *Keeper {
+func NewKeeper(
+	cdc codec.BinaryCodec,
+	storeKey storetypes.StoreKey,
+	paramSpace paramtypes.Subspace,
+	bk types.BankKeeper,
+	ek types.EpochKeeper,
+	ak types.AccountKeeper,
+	ik types.IncentivesKeeper,
+	sk types.SponsorshipKeeper,
+) *Keeper {
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
+
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
 
 	return &Keeper{
 		storeKey:   storeKey,
@@ -39,6 +56,14 @@ func NewKeeper(storeKey storetypes.StoreKey, paramSpace paramtypes.Subspace, bk 
 		ek:         ek,
 		ak:         ak,
 		ik:         ik,
+		sk:         sk,
+		epochPointers: collections.NewMap(
+			sb,
+			types.KeyPrefixEpochPointers,
+			"epoch_pointers",
+			collections.StringKey,
+			collcompat.ProtoValue[types.EpochPointer](cdc),
+		),
 	}
 }
 
@@ -48,14 +73,24 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // CreateStream creates a stream and sends coins to the stream.
-func (k Keeper) CreateStream(ctx sdk.Context, coins sdk.Coins, records []types.DistrRecord, startTime time.Time, epochIdentifier string, numEpochsPaidOver uint64) (uint64, error) {
+func (k Keeper) CreateStream(ctx sdk.Context, coins sdk.Coins, records []types.DistrRecord, startTime time.Time, epochIdentifier string, numEpochsPaidOver uint64, sponsored bool) (uint64, error) {
 	if !coins.IsAllPositive() {
 		return 0, fmt.Errorf("all coins %s must be positive", coins)
 	}
 
-	distrInfo, err := k.NewDistrInfo(ctx, records)
-	if err != nil {
-		return 0, err
+	var distrInfo types.DistrInfo
+	if sponsored {
+		distr, err := k.sk.GetDistribution(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get sponsorship distribution: %w", err)
+		}
+		distrInfo = types.DistrInfoFromDistribution(distr)
+	} else {
+		distr, err := k.NewDistrInfo(ctx, records)
+		if err != nil {
+			return 0, err
+		}
+		distrInfo = distr
 	}
 
 	moduleBalance := k.bk.GetAllBalances(ctx, authtypes.NewModuleAddress(types.ModuleName))
@@ -85,9 +120,10 @@ func (k Keeper) CreateStream(ctx sdk.Context, coins sdk.Coins, records []types.D
 		startTime,
 		epochIdentifier,
 		numEpochsPaidOver,
+		sponsored,
 	)
 
-	err = k.setStream(ctx, &stream)
+	err := k.SetStream(ctx, &stream)
 	if err != nil {
 		return 0, err
 	}

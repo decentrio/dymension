@@ -6,18 +6,23 @@ VERSION ?= $(shell git describe --tags --always)
 PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
-TM_VERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
+TM_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
 DOCKER := $(shell which docker)
 BUILDDIR ?= $(CURDIR)/build
 
 # Dependencies version
 DEPS_COSMOS_SDK_VERSION := $(shell cat go.sum | grep 'github.com/cosmos/cosmos-sdk' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
-DEPS_ETHERMINT_VERSION := $(shell cat go.sum | grep 'github.com/dymensionxyz/ethermint' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
-DEPS_OSMOSIS_VERSION := $(shell cat go.sum | grep 'github.com/dymensionxyz/osmosis' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
+DEPS_ETHERMINT_PSEUDO_VERSION := $(shell grep '^github.com/dymensionxyz/ethermint ' go.sum | grep -v 'go.mod' | tail -n1 | awk '{ print $$2 }')
+DEPS_ETHERMINT_SHORT_COMMIT_ID := $(shell echo "$(DEPS_ETHERMINT_PSEUDO_VERSION)" | rev | cut -d'-' -f1 | rev)
+DEPS_ETHERMINT_COMMIT_HASH := $(shell git ls-remote https://github.com/dymensionxyz/ethermint.git | awk '/^$(DEPS_ETHERMINT_SHORT_COMMIT_ID)/ { print $$1; exit }')
+DEPS_OSMOSIS_PSEUDO_VERSION := $(shell grep '^github.com/dymensionxyz/osmosis ' go.sum | grep -v 'go.mod' | tail -n1 | awk '{ print $$2 }')
+DEPS_OSMOSIS_SHORT_COMMIT_ID := $(shell echo "$(DEPS_OSMOSIS_PSEUDO_VERSION)" | rev | cut -d'-' -f1 | rev)
+DEPS_OSMOSIS_COMMIT_HASH := $(shell git ls-remote https://github.com/dymensionxyz/osmosis.git | awk '/^$(DEPS_OSMOSIS_SHORT_COMMIT_ID)/ { print $$1; exit }')
 DEPS_IBC_GO_VERSION := $(shell cat go.sum | grep 'github.com/cosmos/ibc-go' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
 DEPS_COSMOS_PROTO_VERSION := $(shell cat go.sum | grep 'github.com/cosmos/cosmos-proto' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
 DEPS_COSMOS_GOGOPROTO_VERSION := $(shell cat go.sum | grep 'github.com/cosmos/gogoproto' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
 DEPS_CONFIO_ICS23_VERSION := go/$(shell cat go.sum | grep 'github.com/confio/ics23/go' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
+DEPS_COSMOS_ICS23 := go/$(shell cat go.sum | grep 'github.com/cosmos/ics23/go' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $$2; }')
 
 export GO111MODULE = on
 
@@ -65,7 +70,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=dymension \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
-	      -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TM_VERSION)
+	      -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(TM_VERSION)
 
 ifeq (cleveldb,$(findstring cleveldb,$(DYMENSION_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
@@ -164,14 +169,13 @@ containerProtoFmt=cosmos-sdk-proto-fmt-$(protoVer)
 #		Link to the cosmos/proto-builder docker images:
 #       https://github.com/cosmos/cosmos-sdk/pkgs/container/proto-builder
 #
-protoCosmosVer=0.11.2
+protoCosmosVer=0.14.0
 protoCosmosName=ghcr.io/cosmos/proto-builder:$(protoCosmosVer)
 protoCosmosImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoCosmosName)
 
 proto-gen:
 	@echo "Generating Protobuf files"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
-		sh ./scripts/protocgen.sh; fi
+	$(protoCosmosImage) sh ./scripts/protocgen.sh
 	@go mod tidy
 
 proto-swagger-gen:
@@ -179,6 +183,12 @@ proto-swagger-gen:
 	@make proto-download-deps
 	@echo "Generating Protobuf Swagger"
 	$(protoCosmosImage) sh ./scripts/protoc-swagger-gen.sh
+
+proto-format:
+	@$(protoCosmosImage) find ./ -name "*.proto" -exec clang-format -i {} \;
+
+proto-lint:
+	@$(protoCosmosImage) buf lint --error-format=json
 
 SWAGGER_DIR=./swagger-proto
 THIRD_PARTY_DIR=$(SWAGGER_DIR)/third_party
@@ -202,7 +212,7 @@ proto-download-deps:
 	git remote add origin "https://github.com/dymensionxyz/ethermint.git" && \
 	git config core.sparseCheckout true && \
 	printf "proto\nthird_party\n" > .git/info/sparse-checkout && \
-	git fetch --depth=1 origin "$(DEPS_ETHERMINT_VERSION)" && \
+	git fetch --depth=1 origin "$(DEPS_ETHERMINT_COMMIT_HASH)" && \
 	git checkout FETCH_HEAD && \
 	rm -f ./proto/buf.* && \
 	mv ./proto/* ..
@@ -214,11 +224,15 @@ proto-download-deps:
 	git remote add origin "https://github.com/dymensionxyz/osmosis.git" && \
 	git config core.sparseCheckout true && \
 	printf "proto\nthird_party\n" > .git/info/sparse-checkout && \
-	git fetch --depth=1 origin "$(DEPS_OSMOSIS_VERSION)" && \
+	git fetch --depth=1 origin "$(DEPS_OSMOSIS_COMMIT_HASH)" && \
 	git checkout FETCH_HEAD && \
 	rm -f ./proto/buf.* && \
 	mv ./proto/* ..
 	rm -rf "$(THIRD_PARTY_DIR)/osmosis_tmp"
+	rm -rf "$(THIRD_PARTY_DIR)/osmosis/lockup"
+	rm -rf "$(THIRD_PARTY_DIR)/osmosis/incentives"
+	rm -rf "$(THIRD_PARTY_DIR)/dymensionxyz/dymension/lockup"
+	rm -rf "$(THIRD_PARTY_DIR)/dymensionxyz/dymension/incentives"
 
 	mkdir -p "$(THIRD_PARTY_DIR)/ibc_tmp" && \
 	cd "$(THIRD_PARTY_DIR)/ibc_tmp" && \
@@ -253,3 +267,8 @@ proto-download-deps:
 
 	mkdir -p "$(THIRD_PARTY_DIR)/confio/ics23" && \
 	curl -sSL https://raw.githubusercontent.com/confio/ics23/$(DEPS_CONFIO_ICS23_VERSION)/proofs.proto > "$(THIRD_PARTY_DIR)/proofs.proto"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos/ics23/v1" && \
+	curl -sSL "https://raw.githubusercontent.com/cosmos/ics23/$(DEPS_COSMOS_ICS23)/proto/cosmos/ics23/v1/proofs.proto" > "$(THIRD_PARTY_DIR)/cosmos/ics23/v1/proofs.proto"
+
+.PHONY: proto-gen proto-swagger-gen proto-format proto-lint proto-download-deps

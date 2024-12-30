@@ -1,5 +1,7 @@
 package types
 
+import "cosmossdk.io/collections"
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "rollapp"
@@ -20,3 +22,11 @@ const (
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
+
+const (
+	ObsoleteDRSVersionsKeyPrefix = "obsoleteDRSVersions/value/"
+	// KeyRegisteredDenomPrefix is the prefix to retrieve all RegisteredDenom
+	KeyRegisteredDenomPrefix = "RegisteredDenom/value/"
+)
+
+var SeqToUnfinalizedHeightKeyPrefix = collections.NewPrefix("seqToFinalizeHeight/")

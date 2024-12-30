@@ -14,11 +14,11 @@ import (
 	utils "github.com/dymensionxyz/dymension/v3/utils"
 )
 
-// NewCreateStreamCmd broadcasts a CreateStream message.
+// NewCmdSubmitReplaceStreamDistributionProposal broadcasts a CreateStream message.
 func NewCmdSubmitReplaceStreamDistributionProposal() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replace-stream-distribution-proposal streamID gaugeIds weights [flags]",
-		Short: "Submit a full replacement to the distribution records of an exisiting stream",
+		Short: "Submit a full replacement to the distribution records of an existing stream",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -46,7 +46,11 @@ func NewCmdSubmitReplaceStreamDistributionProposal() *cobra.Command {
 				return err
 			}
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+			txfCli, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf := txfCli.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
 	}

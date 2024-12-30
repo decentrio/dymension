@@ -14,11 +14,11 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
-// NewCreateStreamCmd broadcasts a CreateStream message.
+// NewCmdSubmitUpdateStreamDistributionProposal broadcasts a CreateStream message.
 func NewCmdSubmitUpdateStreamDistributionProposal() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update-stream-distribution-proposal streamID gaugeIds weights [flags]",
-		Short: "Submit an update to the distribution records of an exisiting stream",
+		Short: "Submit an update to the distribution records of an existing stream",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -46,7 +46,11 @@ func NewCmdSubmitUpdateStreamDistributionProposal() *cobra.Command {
 				return err
 			}
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+			txfCli, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf := txfCli.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
 	}

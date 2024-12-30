@@ -1,36 +1,20 @@
 package types
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/dymensionxyz/dymension/v3/testutil/sample"
+	"github.com/dymensionxyz/gerr-cosmos/gerrc"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dymensionxyz/dymension/v3/testutil/sample"
 )
 
+const bech32Prefix = "eth"
+
 func TestMsgCreateRollapp_ValidateBasic(t *testing.T) {
-	defaultMetadata := TokenMetadata{
-		Description: "valid",
-		DenomUnits: []*DenomUnit{
-			{Denom: "uvalid", Exponent: 0},
-			{Denom: "valid", Exponent: 18},
-		},
-		Base:    "uvalid",
-		Display: "valid",
-		Name:    "valid",
-		Symbol:  "VALID",
-	}
-
-	seqDupAddr := sample.AccAddress()
-
-	var tooManyAddresses []string
-	for i := 0; i < 200; i++ {
-		tooManyAddresses = append(tooManyAddresses, sample.AccAddress())
-	}
-	var validNumberAddresses []string
-	for i := 0; i < 100; i++ {
-		validNumberAddresses = append(validNumberAddresses, sample.AccAddress())
-	}
 	tests := []struct {
 		name string
 		msg  MsgCreateRollapp
@@ -39,159 +23,290 @@ func TestMsgCreateRollapp_ValidateBasic(t *testing.T) {
 		{
 			name: "valid - full features",
 			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				MaxSequencers:         2,
-				RollappId:             "dym_100-1",
-				PermissionedAddresses: []string{sample.AccAddress(), sample.AccAddress()},
-				Metadatas:             []TokenMetadata{defaultMetadata},
-				GenesisAccounts: []GenesisAccount{
-					{
-						Address: sample.AccAddress(),
-						Amount:  sdk.NewCoin("valid", sdk.NewInt(1000)),
-					},
+				Creator:          sample.AccAddress(),
+				RollappId:        "dym_100-1",
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
+				Metadata: &RollappMetadata{
+					Website:     "https://dymension.xyz",
+					Description: "Sample description",
+					LogoUrl:     "https://dymension.xyz/logo.png",
+					Telegram:    "https://t.me/rolly",
+					X:           "https://x.dymension.xyz",
+					GenesisUrl:  "https://genesis.dymension.xyz/file.json",
+					DisplayName: "Rollapp",
+					Tagline:     "Tagline",
+					ExplorerUrl: "https://explorer.dymension.xyz",
 				},
 			},
 		},
 		{
 			name: "invalid rollappID",
 			msg: MsgCreateRollapp{
-				Creator:       sample.AccAddress(),
-				MaxSequencers: 1,
-				RollappId:     " ",
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        " ",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
 			err: ErrInvalidRollappID,
 		},
 		{
-			name: "invalid address",
+			name: "invalid bond",
 			msg: MsgCreateRollapp{
-				Creator:       "invalid_address",
-				MaxSequencers: 1,
-				RollappId:     "dym_100-1",
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
+			},
+			err: gerrc.ErrInvalidArgument,
+		},
+		{
+			name: "invalid creator address",
+			msg: MsgCreateRollapp{
+				Creator:          "invalid_address",
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
 			err: ErrInvalidCreatorAddress,
 		},
 		{
 			name: "valid address",
 			msg: MsgCreateRollapp{
-				Creator:       sample.AccAddress(),
-				MaxSequencers: 1,
-				RollappId:     "dym_100-1",
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
 		},
 		{
-			name: "no max sequencers set",
+			name: "invalid initial sequencer address",
 			msg: MsgCreateRollapp{
-				Creator:   sample.AccAddress(),
-				RollappId: "dym_100-1",
+				Creator:          sample.AccAddress(),
+				InitialSequencer: "invalid_address",
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
+			err: ErrInvalidInitialSequencer,
 		},
 		{
-			name: "valid permissioned addresses",
+			name: "multiple initial sequencer addresses",
 			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				MaxSequencers:         2,
-				RollappId:             "dym_100-1",
-				PermissionedAddresses: []string{sample.AccAddress(), sample.AccAddress()},
-			},
-		},
-		{
-			name: "duplicate permissioned addresses",
-			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				MaxSequencers:         2,
-				RollappId:             "dym_100-1",
-				PermissionedAddresses: []string{seqDupAddr, seqDupAddr},
-			},
-			err: ErrPermissionedAddressesDuplicate,
-		},
-		{
-			name: "invalid permissioned addresses",
-			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				MaxSequencers:         2,
-				RollappId:             "dym_100-1",
-				PermissionedAddresses: []string{seqDupAddr, "invalid permissioned address"},
-			},
-			err: ErrInvalidPermissionedAddress,
-		},
-		{
-			name: "valid token metadata",
-			msg: MsgCreateRollapp{
-				Creator:       sample.AccAddress(),
-				MaxSequencers: 1,
-				RollappId:     "dym_100-1",
-				Metadatas:     []TokenMetadata{defaultMetadata},
+				Creator:          sample.AccAddress(),
+				InitialSequencer: fmt.Sprintf("%s,%s,%s", sample.AccAddress(), sample.AccAddress(), sample.AccAddress()),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_WASM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
 			err: nil,
 		},
 		{
-			name: "invalid token metadata", // just trigger one case to see if validation is done or not
+			name: "all initial sequencers allowed",
 			msg: MsgCreateRollapp{
-				Creator:       sample.AccAddress(),
-				MaxSequencers: 1,
-				RollappId:     "dym_100-1",
-				Metadatas: []TokenMetadata{{
-					Description: "valid",
-					DenomUnits: []*DenomUnit{
-						{Denom: "uvalid", Exponent: 0},
-						{Denom: "valid", Exponent: 18},
-					},
-					Base:    "uvalid",
-					Display: "valid",
-					Name:    "", // empty
-					Symbol:  "VALID",
-				}},
-			},
-			err: ErrInvalidTokenMetadata,
-		},
-		{
-			name: "invalid genesis account address",
-			msg: MsgCreateRollapp{
-				Creator:       sample.AccAddress(),
-				MaxSequencers: 1,
-				RollappId:     "dym_100-1",
-				GenesisAccounts: []GenesisAccount{
-					{
-						Address: "invalid_address",
-						Amount:  sdk.NewCoin("valid", sdk.NewInt(1000)),
-					},
+				Creator:          sample.AccAddress(),
+				InitialSequencer: "*",
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_WASM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
 				},
 			},
-			err: ErrInvalidGenesisAccount,
+			err: nil,
 		},
 		{
-			name: "more addresses than sequencers", // just trigger one case to see if validation is done or not
+			name: "invalid initial sequencer - duplicate address",
 			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				RollappId:             "dym_100-1",
-				MaxSequencers:         1,
-				PermissionedAddresses: validNumberAddresses,
+				Creator: sample.AccAddress(),
+				InitialSequencer: fmt.Sprintf("%s,%s",
+					sample.AccAddressFromSecret("same"),
+					sample.AccAddressFromSecret("same")),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
-			err: ErrTooManyPermissionedAddresses,
+			err: ErrInvalidInitialSequencer,
 		},
 		{
-			name: "too many sequencers", // just trigger one case to see if validation is done or not
+			name: "invalid bech32 prefix",
 			msg: MsgCreateRollapp{
-				Creator:               sample.AccAddress(),
-				RollappId:             "dym_100-1",
-				MaxSequencers:         200,
-				PermissionedAddresses: tooManyAddresses,
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "Rollapp",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    "DYM",
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
 			},
-			err: ErrInvalidMaxSequencers,
+			err: gerrc.ErrInvalidArgument,
 		},
 		{
-			name: "max sequencer not set",
+			name: "invalid metadata: invalid logo url",
 			msg: MsgCreateRollapp{
-				Creator:   sample.AccAddress(),
-				RollappId: "dym_100-1",
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "alias",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
+				Metadata: &RollappMetadata{
+					Website:     "https://dymension.xyz",
+					Description: "Sample description",
+					LogoUrl:     string(rune(0x7f)),
+				},
 			},
+			err: ErrInvalidURL,
+		},
+		{
+			name: "invalid genesis checksum: too long",
+			msg: MsgCreateRollapp{
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "alias",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: strings.Repeat("a", maxGenesisChecksumLength+1),
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
+			},
+			err: ErrInvalidGenesisChecksum,
+		},
+		{
+			name: "invalid explorer url",
+			msg: MsgCreateRollapp{
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "alias",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(1000),
+				},
+				Metadata: &RollappMetadata{
+					ExplorerUrl: string(rune(0x7f)),
+				},
+			},
+			err: ErrInvalidURL,
+		},
+		{
+			name: "no genesisInfo",
+			msg: MsgCreateRollapp{
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "alias",
+				VmType:           Rollapp_EVM,
+			},
+		},
+		{
+			name: "invalid initial supply",
+			msg: MsgCreateRollapp{
+				Creator:          sample.AccAddress(),
+				InitialSequencer: sample.AccAddress(),
+				MinSequencerBond: DefaultMinSequencerBondGlobalCoin,
+				RollappId:        "dym_100-1",
+				Alias:            "alias",
+				VmType:           Rollapp_EVM,
+				GenesisInfo: &GenesisInfo{
+					Bech32Prefix:    bech32Prefix,
+					GenesisChecksum: "checksum",
+					NativeDenom:     DenomMetadata{Display: "DEN", Base: "aden", Exponent: 18},
+					InitialSupply:   sdk.NewInt(-1),
+				},
+			},
+			err: ErrInvalidInitialSupply,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.msg.ValidateBasic()
 			if tt.err != nil {
-				require.ErrorContains(t, err, tt.err.Error(), "test %s failed", tt.name)
+				require.ErrorIs(t, err, tt.err, "test %s failed", tt.name)
 				return
 			}
 			require.NoError(t, err)

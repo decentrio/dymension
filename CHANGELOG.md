@@ -37,17 +37,44 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+### State Machine Breaking
+
+- (dependencies) [#970](https://github.com/dymensionxyz/dymension/pull/970) Bump dependencies cosmos-sdk to v0.47.12 
+
 ### Features
 
+- (rollapp) [#1127](https://github.com/dymensionxyz/dymension/issues/1127) Add apps to rollapp
+- (sequencer) [#1037](https://github.com/dymensionxyz/dymension/issues/1037) Enforce rpcs and evm rpcs for sequencer registration
+- (rollapp) [#1036](https://github.com/dymensionxyz/dymension/issues/1036) Add VMType field to Rollapp
 - (swagger) [#856](https://github.com/dymensionxyz/dymension/issues/856) Add make command `proto-swagger-gen`
 - (delayedack) [#825](https://github.com/dymensionxyz/dymension/issues/825) Add query for rollapp packets using CLI
 
 ### Bug Fixes
 
+- (eibc) [#845](https://github.com/dymensionxyz/dymension/issues/845) Segregate eibc events as per use cases
+
 ## [v3.1.0](https://github.com/dymensionxyz/dymension/releases/tag/v3.1.0)
 
 ### Features
 
+- (rollapp) [#999](https://github.com/dymensionxyz/dymension/issues/999) Handle sequencer information updates.
+- (rollapp) [#996](https://github.com/dymensionxyz/dymension/issues/996) Handle rollapp information updates.
+- (sequencer) [#955](https://github.com/dymensionxyz/dymension/issues/979) Rework the sequencer registration flow.
+- (app) [#972](https://github.com/dymensionxyz/dymension/pull/972) Refactor upgrade handlers. 
+- (delayedack) [#972](https://github.com/dymensionxyz/dymension/pull/972) Use pagination when deleting rollapp packets.
+- (denommetadata) [#955](https://github.com/dymensionxyz/dymension/issues/955) Add IBC middleware to create denom metadata from rollapp, on IBC transfer.
+- (genesisbridge) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds ibc module and ante handler to stop transfers to/from rollapp that has an incomplete genesis bridge (transfersEnabled)
+- (genesisbridge) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds a new temporary ibc module to set the canonical channel id, since we no longer do that using a whitelisted addr
+- (genesisbridge) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds a new ibc module to handle incoming 'genesis transfers'. It validates the special memo and registers a denom. It will not allow any regular transfers if transfers are not enabled
+- (rollapp) [#932](https://github.com/dymensionxyz/dymension/issues/932) Renames is_genesis_event on the rollapp genesis state to 'transfers_enabled' this is backwards compatible
+- (rollapp) [#932](https://github.com/dymensionxyz/dymension/issues/932) Removes concept of passing genesis accounts and denoms in the create rollapp message
+- (rollapp) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds a transfersenabled flag to createRollapp (might be changed in future)
+- (delayedack) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds the notion of skipctx, to skip it with a special sdk context value
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Adds a gerr (google error ) and derr (dymension error) packages for idiomatic error handling. (In future we will consolidate across dymint/rdk)
+- (denommetadata) [#907](https://github.com/dymensionxyz/dymension/issues/907) Add IBC middleware to migrate denom metadata to rollappp, remove `CreateDenomMetadata` and `UpdateDenomMetadata` tx handlers
+- (eibc) [#873](https://github.com/dymensionxyz/dymension/issues/873) Add `FulfillerAddress` to `DemandOrder` and its event
+- (delayedack) [#849](https://github.com/dymensionxyz/dymension/issues/849) Add demand order filters: type, rollapp id and limit
+- (delayedack) [#850](https://github.com/dymensionxyz/dymension/issues/850) Add type filter for delayedack
 - (rollapp) [#829](https://github.com/dymensionxyz/dymension/issues/829) Refactor rollapp cli to be more useful
 - (delayedack) [#728](https://github.com/dymensionxyz/dymension/issues/728) Create eibc order on err ack from rollapp
 - (delayedack) [#672](https://github.com/dymensionxyz/dymension/issues/672) Delayedack invariant for finalized and reverted packets
@@ -76,10 +103,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Bug Fixes
 
+- (eibc,delayedack) [#942](https://github.com/dymensionxyz/dymension/issues/942) Add missing genesis validation
+- (rollapp) [#317](https://github.com/dymensionxyz/research/issues/317) Prevent overflow on rollapp state update
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Dry out existing middlewares to make use of new .GetValidTransfer* functions which take care of parsing and validating the fungible packet, and querying and validating any associated rollapp and finalizations
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Removes the obsolete ValidateRollappId func and sub routines
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Simplify GetAllBlockHeightToFinalizationQueue
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Fixes naming for our 'middlewares' to make them clearly one of ibc module / ics4 wrapper / middleware
+- (code standards) [#932](https://github.com/dymensionxyz/dymension/issues/932) Moves our various utils to properly namespaced packages under utils/
 - (rollapp) [#839](https://github.com/dymensionxyz/dymension/issues/839) Remove rollapp deprecated fields
 - (eibc) [#836](https://github.com/dymensionxyz/dymension/issues/836) Improve eibc memo error handling
 - (eibc) [#830](https://github.com/dymensionxyz/dymension/issues/830) Invalid tx should return ackErr
-- (eibc) [#828](https://github.com/dymensionxyz/dymension/issues/828) Wrong packet written on delayedack acknowledgment
+- (eibc) [#828](https://github.com/dymensionxyz/dymension/issues/828) Wrong packet written on delayedack acknowledgement
 - (delayedack) [#822](https://github.com/dymensionxyz/dymension/issues/822) Acknowledgement not written in case of ackerr
 - (rollapp) [#820](https://github.com/dymensionxyz/dymension/issues/820) Invariant block-height-to-finalization-queue fix for freezing rollapp
 - (delayedack) [#814](https://github.com/dymensionxyz/dymension/issues/814) Proof height ante handler doesn't gurantee uniqueness
@@ -122,6 +156,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (rollapp) [#681](https://github.com/dymensionxyz/dymension/pull/681) Accept rollapp initial state with arbitrary height
 - (ibc) [#678](https://github.com/dymensionxyz/dymension/pull/678) Apply a pfm patch
 - (rollapp) [#671](https://github.com/dymensionxyz/dymension/pull/671) Fix rollapp genesis token not registered as IBC denom
+- (delayedack) [#670](https://github.com/dymensionxyz/dymension/issues/670) Finalize error handling per rollapp
 - (dependencies) [#677](https://github.com/dymensionxyz/dymension/pull/677) Bump cosmos ecosystem dependencies
 - (hygiene) [#676](https://github.com/dymensionxyz/dymension/pull/676) Lint tests
 - (rollapp) [#657](https://github.com/dymensionxyz/dymension/pull/657) Verification of broken invariant logic

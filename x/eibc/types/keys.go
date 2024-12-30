@@ -2,7 +2,7 @@ package types
 
 import (
 	"encoding/binary"
-	fmt "fmt"
+	"fmt"
 
 	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 )
@@ -34,13 +34,9 @@ var (
 	PendingDemandOrderKeyPrefix = []byte{0x00, 0x01}
 	// FinalizedDemandOrderKeyPrefix is the prefix for finalized demand orders
 	FinalizedDemandOrderKeyPrefix = []byte{0x00, 0x02}
-	// RevertedDemandOrderKeyPrefix is the prefix for reverted demand orders
-	RevertedDemandOrderKeyPrefix = []byte{0x00, 0x03}
-)
 
-func KeyPrefix(p string) []byte {
-	return []byte(p)
-}
+	_ = []byte{0x00, 0x03} // deprecated key
+)
 
 // GetDemandOrderKey constructs a key for a specific DemandOrder.
 func GetDemandOrderKey(packetStatus commontypes.Status, orderId string) ([]byte, error) {
@@ -51,8 +47,6 @@ func GetDemandOrderKey(packetStatus commontypes.Status, orderId string) ([]byte,
 		prefix = PendingDemandOrderKeyPrefix
 	case commontypes.Status_FINALIZED:
 		prefix = FinalizedDemandOrderKeyPrefix
-	case commontypes.Status_REVERTED:
-		prefix = RevertedDemandOrderKeyPrefix
 	default:
 		return nil, fmt.Errorf("invalid packet status: %s", packetStatus)
 	}

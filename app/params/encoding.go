@@ -14,3 +14,5 @@ type EncodingConfig struct {
 	TxConfig          client.TxConfig
 	Amino             *codec.LegacyAmino
 }
+
+const StakePerAccount = "stake_per_account"

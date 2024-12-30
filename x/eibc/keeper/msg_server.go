@@ -2,8 +2,14 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	"github.com/dymensionxyz/sdk-utils/utils/uevent"
+
 	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 	"github.com/dymensionxyz/dymension/v3/x/eibc/types"
 )
@@ -23,41 +29,248 @@ var _ types.MsgServer = msgServer{}
 func (m msgServer) FulfillOrder(goCtx context.Context, msg *types.MsgFulfillOrder) (*types.MsgFulfillOrderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := ctx.Logger()
-	// Check that the msg is valid
-	err := msg.ValidateBasic()
+
+	err := msg.ValidateBasic() // TODO: remove, sdk does this
 	if err != nil {
 		return nil, err
 	}
-	// Check that the order exists in status PENDING
-	demandOrder, err := m.GetDemandOrder(ctx, commontypes.Status_PENDING, msg.OrderId)
+
+	demandOrder, err := m.GetOutstandingOrder(ctx, msg.OrderId)
 	if err != nil {
 		return nil, err
 	}
-	// Check that the order is not fulfilled yet
-	if demandOrder.IsFullfilled {
-		return nil, types.ErrDemandAlreadyFulfilled
+
+	// Check that the fulfiller expected fee is equal to the demand order fee
+	expectedFee, _ := sdk.NewIntFromString(msg.ExpectedFee)
+	orderFee := demandOrder.GetFeeAmount()
+	if !orderFee.Equal(expectedFee) {
+		return nil, types.ErrExpectedFeeNotMet
 	}
-	// Check the underlying packet is still relevant (i.e not expired, rejected, reverted)
-	if demandOrder.TrackingPacketStatus != commontypes.Status_PENDING {
-		return nil, types.ErrDemandOrderInactive
-	}
-	// Check for blocked address
-	if m.BankKeeper.BlockedAddr(demandOrder.GetRecipientBech32Address()) {
-		return nil, types.ErrBlockedAddress
-	}
-	// Check that the fulfiller has enough balance to fulfill the order
-	fulfillerAccount := m.GetAccount(ctx, msg.GetFulfillerBech32Address())
+
+	fulfillerAccount := m.ak.GetAccount(ctx, msg.GetFulfillerBech32Address())
 	if fulfillerAccount == nil {
-		return nil, types.ErrFullfillerAddressDoesNotExist
+		return nil, types.ErrFulfillerAddressDoesNotExist
 	}
+
 	// Send the funds from the fulfiller to the eibc packet original recipient
-	err = m.BankKeeper.SendCoins(ctx, fulfillerAccount.GetAddress(), demandOrder.GetRecipientBech32Address(), demandOrder.Price)
+	err = m.bk.SendCoins(ctx, fulfillerAccount.GetAddress(), demandOrder.GetRecipientBech32Address(), demandOrder.Price)
 	if err != nil {
 		logger.Error("Failed to send coins", "error", err)
 		return nil, err
 	}
-	// Fulfill the order by updating the order status and underlying packet recipient
-	err = m.Keeper.FulfillOrder(ctx, demandOrder, fulfillerAccount.GetAddress())
 
-	return &types.MsgFulfillOrderResponse{}, err
+	// Fulfill the order by updating the order status and underlying packet recipient
+	if err = m.Keeper.SetOrderFulfilled(ctx, demandOrder, fulfillerAccount.GetAddress(), nil); err != nil {
+		return nil, err
+	}
+
+	if err = uevent.EmitTypedEvent(ctx, demandOrder.GetFulfilledEvent()); err != nil {
+		return nil, fmt.Errorf("emit event: %w", err)
+	}
+
+	return &types.MsgFulfillOrderResponse{}, nil
+}
+
+func (m msgServer) FulfillOrderAuthorized(goCtx context.Context, msg *types.MsgFulfillOrderAuthorized) (*types.MsgFulfillOrderAuthorizedResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	logger := ctx.Logger()
+
+	err := msg.ValidateBasic() // TODO: remove, sdk does this
+	if err != nil {
+		return nil, err
+	}
+
+	demandOrder, err := m.GetOutstandingOrder(ctx, msg.OrderId)
+	if err != nil {
+		return nil, err
+	}
+
+	// check compat between the fulfillment and current order and packet status
+	if err := m.validateOrder(demandOrder, msg, ctx); err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrUnauthorized, err.Error())
+	}
+
+	lpAccount := m.ak.GetAccount(ctx, msg.GetLPBech32Address())
+	if lpAccount == nil {
+		return nil, types.ErrLPAccountDoesNotExist
+	}
+
+	// Send the funds from the lpAccount to the eibc packet original recipient
+	err = m.bk.SendCoins(ctx, lpAccount.GetAddress(), demandOrder.GetRecipientBech32Address(), demandOrder.Price)
+	if err != nil {
+		logger.Error("Failed to send price to recipient", "error", err)
+		return nil, err
+	}
+
+	operatorAccount := m.ak.GetAccount(ctx, msg.GetOperatorFeeBech32Address())
+	if operatorAccount == nil {
+		return nil, types.ErrOperatorFeeAccountDoesNotExist
+	}
+
+	fee := sdk.NewDecFromInt(demandOrder.GetFeeAmount())
+	operatorFee := fee.MulTruncate(msg.OperatorFeeShare.Dec).TruncateInt()
+
+	if operatorFee.IsPositive() {
+		// Send the fee part to the fulfiller/operator
+		err = m.bk.SendCoins(ctx, lpAccount.GetAddress(), operatorAccount.GetAddress(), sdk.NewCoins(sdk.NewCoin(demandOrder.Price[0].Denom, operatorFee)))
+		if err != nil {
+			logger.Error("Failed to send fee part to operator", "error", err)
+			return nil, err
+		}
+	}
+
+	if err = m.Keeper.SetOrderFulfilled(ctx, demandOrder, operatorAccount.GetAddress(), lpAccount.GetAddress()); err != nil {
+		return nil, err
+	}
+
+	if err = uevent.EmitTypedEvent(ctx, demandOrder.GetFulfilledAuthorizedEvent(
+		demandOrder.CreationHeight,
+		msg.LpAddress,
+		operatorAccount.GetAddress().String(),
+		operatorFee.String(),
+	)); err != nil {
+		return nil, fmt.Errorf("emit event: %w", err)
+	}
+
+	return &types.MsgFulfillOrderAuthorizedResponse{}, nil
+}
+
+// TODO: rename and fix signature (ctx first)
+func (m msgServer) validateOrder(demandOrder *types.DemandOrder, msg *types.MsgFulfillOrderAuthorized, ctx sdk.Context) error {
+	if demandOrder.RollappId != msg.RollappId {
+		return types.ErrRollappIdMismatch
+	}
+
+	if !demandOrder.Price.IsEqual(msg.Price) {
+		return types.ErrPriceMismatch
+	}
+
+	// Check that the expected fee is equal to the demand order fee
+	expectedFee, _ := sdk.NewIntFromString(msg.ExpectedFee)
+	orderFee := demandOrder.GetFeeAmount()
+	if !orderFee.Equal(expectedFee) {
+		return types.ErrExpectedFeeNotMet
+	}
+
+	if msg.SettlementValidated {
+		validated, err := m.checkIfSettlementValidated(ctx, demandOrder)
+		if err != nil {
+			return fmt.Errorf("check if settlement validated: %w", err)
+		}
+
+		if !validated {
+			return types.ErrOrderNotSettlementValidated
+		}
+	}
+	return nil
+}
+
+func (m msgServer) checkIfSettlementValidated(ctx sdk.Context, demandOrder *types.DemandOrder) (bool, error) {
+	raPacket, err := m.dack.GetRollappPacket(ctx, demandOrder.TrackingPacketKey)
+	if err != nil {
+		return false, fmt.Errorf("get rollapp packet: %w", err)
+	}
+
+	// TODO: extract to rollapp keeper func HaveHeight(..)
+
+	// as it is not currently possible to make IBC transfers without a canonical client,
+	// we can assume that there has to exist at least one state info record for the rollapp
+	stateInfo, ok := m.rk.GetLatestStateInfo(ctx, demandOrder.RollappId)
+	if !ok {
+		return false, types.ErrRollappStateInfoNotFound
+	}
+
+	lastHeight := stateInfo.GetLatestHeight()
+
+	// TODO: write oneliner
+	if lastHeight < raPacket.ProofHeight {
+		return false, nil
+	}
+	return true, nil
+}
+
+// UpdateDemandOrder implements types.MsgServer.
+func (m msgServer) UpdateDemandOrder(goCtx context.Context, msg *types.MsgUpdateDemandOrder) (*types.MsgUpdateDemandOrderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	err := msg.ValidateBasic() // TODO: remove, sdk does this
+	if err != nil {
+		return nil, err
+	}
+
+	// Check that the order exists in status PENDING
+	demandOrder, err := m.GetOutstandingOrder(ctx, msg.OrderId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check that the signer is the order owner
+	orderOwner := demandOrder.GetRecipientBech32Address()
+	msgSigner := msg.GetSignerAddr()
+	if !msgSigner.Equals(orderOwner) {
+		return nil, errorsmod.Wrap(sdkerrors.ErrUnauthorized, "only the recipient can update the order")
+	}
+
+	raPacket, err := m.dack.GetRollappPacket(ctx, demandOrder.TrackingPacketKey)
+	if err != nil {
+		// TODO: isn't this internal error?
+		return nil, err
+	}
+
+	var data transfertypes.FungibleTokenPacketData
+	if err := transfertypes.ModuleCdc.UnmarshalJSON(raPacket.GetPacket().GetData(), &data); err != nil {
+		return nil, err
+	}
+
+	// Get the bridging fee multiplier
+	// ErrAck or Timeout packets do not incur bridging fees
+	bridgingFeeMultiplier := m.dack.BridgingFee(ctx)
+	raPacketType := raPacket.GetType()
+	if raPacketType != commontypes.RollappPacket_ON_RECV {
+		bridgingFeeMultiplier = sdk.ZeroDec()
+	}
+
+	// calculate the new price: transferTotal - newFee - bridgingFee
+	newFeeInt, _ := sdk.NewIntFromString(msg.NewFee)
+	transferTotal, _ := sdk.NewIntFromString(data.Amount)
+	newPrice, err := types.CalcPriceWithBridgingFee(transferTotal, newFeeInt, bridgingFeeMultiplier)
+	if err != nil {
+		return nil, err
+	}
+
+	denom := demandOrder.Price[0].Denom
+	demandOrder.Fee = sdk.NewCoins(sdk.NewCoin(denom, newFeeInt))
+	demandOrder.Price = sdk.NewCoins(sdk.NewCoin(denom, newPrice))
+
+	if err = m.SetDemandOrder(ctx, demandOrder); err != nil {
+		return nil, err
+	}
+
+	if err = uevent.EmitTypedEvent(ctx, demandOrder.GetUpdatedEvent(raPacket.ProofHeight, data.Amount)); err != nil {
+		return nil, fmt.Errorf("emit event: %w", err)
+	}
+
+	return &types.MsgUpdateDemandOrderResponse{}, nil
+}
+
+func (m msgServer) GetOutstandingOrder(ctx sdk.Context, orderId string) (*types.DemandOrder, error) {
+	// Check that the order exists in status PENDING
+	demandOrder, err := m.GetDemandOrder(ctx, commontypes.Status_PENDING, orderId)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: would be nice if the demand order already has the proofHeight, so we don't have to fetch the packet
+	packet, err := m.dack.GetRollappPacket(ctx, demandOrder.TrackingPacketKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// No error means the order is due to be finalized,
+	// in which case the order is not outstanding anymore
+	if err = m.dack.VerifyHeightFinalized(ctx, demandOrder.RollappId, packet.ProofHeight); err == nil {
+		return nil, types.ErrDemandOrderInactive
+	}
+
+	return demandOrder, demandOrder.ValidateOrderIsOutstanding()
 }

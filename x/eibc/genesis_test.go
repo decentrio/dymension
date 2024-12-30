@@ -1,60 +1,54 @@
 package eibc_test
 
 import (
+	"encoding/base64"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	keepertest "github.com/dymensionxyz/dymension/v3/testutil/keeper"
+	"github.com/dymensionxyz/dymension/v3/testutil/nullify"
 	commontypes "github.com/dymensionxyz/dymension/v3/x/common/types"
 	"github.com/dymensionxyz/dymension/v3/x/eibc"
 	"github.com/dymensionxyz/dymension/v3/x/eibc/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestInitGenesis(t *testing.T) {
-	tests := []struct {
-		name         string
-		params       types.Params
-		demandOrders []types.DemandOrder
-		expPanic     bool
-	}{
-		{
-			name: "only params - success",
-			params: types.Params{
-				EpochIdentifier: "week",
-				TimeoutFee:      sdk.NewDecWithPrec(4, 1),
-				ErrackFee:       sdk.NewDecWithPrec(4, 1),
+	genesisState := types.GenesisState{
+		Params: types.DefaultParams(),
+		DemandOrders: []types.DemandOrder{
+			{
+				Id:                   "1",
+				TrackingPacketKey:    "11/22/33",
+				Price:                sdk.Coins{sdk.Coin{Denom: "adym", Amount: math.NewInt(150)}},
+				Fee:                  sdk.Coins{sdk.Coin{Denom: "adym", Amount: math.NewInt(50)}},
+				Recipient:            "dym17g9cn4ss0h0dz5qhg2cg4zfnee6z3ftg3q6v58",
+				TrackingPacketStatus: commontypes.Status_PENDING,
 			},
-			demandOrders: []types.DemandOrder{},
-			expPanic:     false,
-		},
-		{
-			name: "params and demand order - panic",
-			params: types.Params{
-				EpochIdentifier: "week",
-				TimeoutFee:      sdk.NewDecWithPrec(4, 1),
-				ErrackFee:       sdk.NewDecWithPrec(4, 1),
+			{
+				Id:                   "2",
+				TrackingPacketKey:    "22/33/44",
+				Price:                sdk.Coins{sdk.Coin{Denom: "adym", Amount: math.NewInt(250)}},
+				Fee:                  sdk.Coins{sdk.Coin{Denom: "adym", Amount: math.NewInt(150)}},
+				Recipient:            "dym15saxgqw6kvhv6k5sg6r45kmdf4sf88kfw2adcw",
+				FulfillerAddress:     "dym19pas0pqwje540u5ptwnffjxeamdxc9tajmdrfa",
+				TrackingPacketStatus: commontypes.Status_FINALIZED,
 			},
-			demandOrders: []types.DemandOrder{{Id: "0"}},
-			expPanic:     true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			genesisState := types.GenesisState{Params: tt.params, DemandOrders: tt.demandOrders}
-			k, ctx := keepertest.EibcKeeper(t)
-			if tt.expPanic {
-				require.Panics(t, func() {
-					eibc.InitGenesis(ctx, *k, genesisState)
-				})
-			} else {
-				eibc.InitGenesis(ctx, *k, genesisState)
-				params := k.GetParams(ctx)
-				require.Equal(t, genesisState.Params, params)
-			}
-		})
-	}
+	k, ctx := keepertest.EibcKeeper(t)
+	eibc.InitGenesis(ctx, *k, genesisState)
+	got := eibc.ExportGenesis(ctx, *k)
+	require.NotNil(t, got)
+	require.ElementsMatch(t, genesisState.DemandOrders, got.DemandOrders)
+
+	nullify.Fill(&genesisState)
+	nullify.Fill(got)
+
+	require.ElementsMatch(t, genesisState.DemandOrders, got.DemandOrders)
 }
 
 func TestExportGenesis(t *testing.T) {
@@ -81,15 +75,28 @@ func TestExportGenesis(t *testing.T) {
 			TrackingPacketStatus: commontypes.Status_PENDING,
 		},
 	}
+
 	for _, demandOrder := range demandOrders {
 		demandOrderCopy := demandOrder
 		err := k.SetDemandOrder(ctx, &demandOrderCopy)
 		require.NoError(t, err)
 	}
+
 	k.SetParams(ctx, params)
 	// Verify the exported genesis
 	got := eibc.ExportGenesis(ctx, *k)
-	require.NotNil(t, got)
-	require.ElementsMatch(t, demandOrders, got.DemandOrders)
-	require.Equal(t, params, got.Params)
+
+	require.NotNil(t, got, "ExportGenesis should not return nil")
+
+	require.Equal(t, params, got.Params, "Params should match the set params")
+
+	expectedDemandOrders := make([]types.DemandOrder, len(demandOrders))
+	for i, order := range demandOrders {
+		orderCopy := order
+		encodedKey := base64.StdEncoding.EncodeToString([]byte(order.TrackingPacketKey))
+		orderCopy.TrackingPacketKey = encodedKey
+		expectedDemandOrders[i] = orderCopy
+	}
+
+	require.ElementsMatch(t, expectedDemandOrders, got.DemandOrders, "DemandOrders should match after encoding TrackingPacketKey")
 }

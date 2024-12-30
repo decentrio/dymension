@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	cometbftproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/dymensionxyz/dymension/v3/app/apptesting"
+	lockuptypes "github.com/dymensionxyz/dymension/v3/x/lockup/types"
 	"github.com/dymensionxyz/dymension/v3/x/streamer/types"
-	"github.com/osmosis-labs/osmosis/v15/app/apptesting"
-	lockuptypes "github.com/osmosis-labs/osmosis/v15/x/lockup/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var defaultDistrInfo []types.DistrRecord = []types.DistrRecord{
@@ -31,9 +32,9 @@ type QueryTestSuite struct {
 	queryClient types.QueryClient
 }
 
-// CreateStream creates a stream struct given the required params.
+// CreateStream creates a non-sponsored stream struct given the required params.
 func (suite *QueryTestSuite) CreateStream(distrTo []types.DistrRecord, coins sdk.Coins, startTime time.Time, epochIdetifier string, numEpoch uint64) (uint64, *types.Stream) {
-	streamID, err := suite.App.StreamerKeeper.CreateStream(suite.Ctx, coins, distrTo, startTime, epochIdetifier, numEpoch)
+	streamID, err := suite.App.StreamerKeeper.CreateStream(suite.Ctx, coins, distrTo, startTime, epochIdetifier, numEpoch, false)
 	suite.Require().NoError(err)
 	stream, err := suite.App.StreamerKeeper.GetStreamByID(suite.Ctx, streamID)
 	suite.Require().NoError(err)
@@ -45,10 +46,14 @@ func (suite *QueryTestSuite) CreateDefaultStream(coins sdk.Coins) (uint64, *type
 }
 
 func (suite *QueryTestSuite) SetupSuite() {
-	suite.Setup()
+	suite.App = apptesting.Setup(suite.T())
+	suite.Ctx = suite.App.BaseApp.NewContext(false, cometbftproto.Header{Height: 1, ChainID: "dymension_100-1", Time: time.Now().UTC()})
 	streamerCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(2500)), sdk.NewCoin("udym", sdk.NewInt(2500)))
 	suite.FundModuleAcc(types.ModuleName, streamerCoins)
-	suite.queryClient = types.NewQueryClient(suite.QueryHelper)
+	suite.queryClient = types.NewQueryClient(&baseapp.QueryServiceTestHelper{
+		GRPCQueryRouter: suite.App.GRPCQueryRouter(),
+		Ctx:             suite.Ctx,
+	})
 
 	err := suite.CreateGauge()
 	suite.Require().NoError(err)
@@ -82,7 +87,7 @@ func (s *QueryTestSuite) TestQueriesNeverAlterState() {
 			&types.StreamsResponse{},
 		},
 		{
-			"Query module to distibute coins",
+			"Query module to distribute coins",
 			"/dymensionxyz.dymension.streamer.Query/ModuleToDistributeCoins",
 			&types.ModuleToDistributeCoinsRequest{},
 			&types.ModuleToDistributeCoinsResponse{},
@@ -101,7 +106,11 @@ func (s *QueryTestSuite) TestQueriesNeverAlterState() {
 		s.Run(tc.name, func() {
 			s.SetupSuite()
 			s.CreateDefaultStream(sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(2500))))
-			err := s.QueryHelper.Invoke(gocontext.Background(), tc.query, tc.input, tc.output)
+			queryHelper := &baseapp.QueryServiceTestHelper{
+				GRPCQueryRouter: s.App.GRPCQueryRouter(),
+				Ctx:             s.Ctx,
+			}
+			err := queryHelper.Invoke(gocontext.Background(), tc.query, tc.input, tc.output)
 			s.Require().NoError(err)
 			s.StateNotAltered()
 		})

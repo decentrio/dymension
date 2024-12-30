@@ -15,8 +15,8 @@ func DefaultGenesis() *GenesisState {
 		LatestStateInfoIndexList:           []StateInfoIndex{},
 		LatestFinalizedStateIndexList:      []StateInfoIndex{},
 		BlockHeightToFinalizationQueueList: []BlockHeightToFinalizationQueue{},
-		// this line is used by starport scaffolding # genesis/types/default
-		Params: DefaultParams(),
+		AppList:                            []App{},
+		Params:                             DefaultParams(),
 	}
 }
 
@@ -64,16 +64,36 @@ func (gs GenesisState) Validate() error {
 		latestFinalizedStateIndexIndexMap[index] = struct{}{}
 	}
 	// Check for duplicated index in blockHeightToFinalizationQueue
-	blockHeightToFinalizationQueueIndexMap := make(map[string]struct{})
+	blockHeightToFinalizationQueueIndexMap := make(map[uint64]struct{})
 
 	for _, elem := range gs.BlockHeightToFinalizationQueueList {
-		index := string(BlockHeightToFinalizationQueueKey(elem.CreationHeight))
+		index := elem.CreationHeight
 		if _, ok := blockHeightToFinalizationQueueIndexMap[index]; ok {
 			return errors.New("duplicated index for blockHeightToFinalizationQueue")
 		}
 		blockHeightToFinalizationQueueIndexMap[index] = struct{}{}
 	}
-	// this line is used by starport scaffolding # genesis/types/validate
+
+	// Check for duplicated index in app
+	appIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.AppList {
+		index := string(AppKey(elem))
+		if _, ok := appIndexMap[index]; ok {
+			return errors.New("duplicated index for app")
+		}
+		appIndexMap[index] = struct{}{}
+	}
+
+	// Check for duplicated index in obsolete DRS versions
+	obsoleteDRSVersionIndexMap := make(map[uint32]struct{})
+
+	for _, elem := range gs.ObsoleteDrsVersions {
+		if _, ok := obsoleteDRSVersionIndexMap[elem]; ok {
+			return errors.New("duplicated index for ObsoleteDrsVersions")
+		}
+		obsoleteDRSVersionIndexMap[elem] = struct{}{}
+	}
 
 	return gs.Params.Validate()
 }
