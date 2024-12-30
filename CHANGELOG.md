@@ -1,7 +1,11 @@
 # Changelog
 ## [Unreleased]
 
-#  (2024-12-30)
+# [](https://github.com/decentrio/dymension/compare/v6.0.0...v) (2024-12-30)
+
+
+
+# [6.0.0](https://github.com/decentrio/dymension/compare/v2.0.0-alpha.1...v6.0.0) (2024-12-30)
 
 
 ### Bug Fixes
@@ -25,8 +29,6 @@
 * bad state info finalization ([#647](https://github.com/decentrio/dymension/issues/647)) ([3012d5c](https://github.com/decentrio/dymension/commit/3012d5cb9b1baad0f111047bb338e9667bfe9460))
 * **bridging_fee:** adding cacheCtx for charging fees ([#1563](https://github.com/decentrio/dymension/issues/1563)) ([65cd290](https://github.com/decentrio/dymension/commit/65cd29029b5af280dccda3eba408550e763ecdcf))
 * **bridging_fee:** getting correct denom for incoming transfers ([#1567](https://github.com/decentrio/dymension/issues/1567)) ([31fd2d5](https://github.com/decentrio/dymension/commit/31fd2d565984a824abb6ec1fa30e75435f31969f))
-* bug missing denom metadata ([#314](https://github.com/decentrio/dymension/issues/314)) ([1e68d77](https://github.com/decentrio/dymension/commit/1e68d770a85b48d9df9f811418d7df844517251e))
-* changed denom to udym ([#194](https://github.com/decentrio/dymension/issues/194)) ([07e2e21](https://github.com/decentrio/dymension/commit/07e2e21a0f28629f0cee6b28d2e983312d5b18ae))
 * changed finalization logic to be based on current height backwards ([#602](https://github.com/decentrio/dymension/issues/602)) ([27af157](https://github.com/decentrio/dymension/commit/27af1577e7a45a147f55b98cfc9f1acfdf64070d))
 * Changed v2 upgrade handler to not panic when client status is not found. ([#449](https://github.com/decentrio/dymension/issues/449)) ([8e297d3](https://github.com/decentrio/dymension/commit/8e297d31f1d659350cbf1aa87be4325d4117c368))
 * check for duplicates in genesis info accounts ([#1472](https://github.com/decentrio/dymension/issues/1472)) ([fb0ffb7](https://github.com/decentrio/dymension/commit/fb0ffb7525a086960c3910538bfa535583cfd02f))
@@ -51,7 +53,6 @@
 * **delayedack:** wrong delayedack channels for onTimeout and OnAck  ([#815](https://github.com/decentrio/dymension/issues/815)) ([32b5ea0](https://github.com/decentrio/dymension/commit/32b5ea0672c0883aa18040b2f5d1732f2a584cf9))
 * **denom meta:** use correct channels in middlewares arguments ([#1191](https://github.com/decentrio/dymension/issues/1191)) ([b50f568](https://github.com/decentrio/dymension/commit/b50f5687e82d65e0696939b96ccf3abb820bdaa3))
 * **denommetada:** sync validations between different token metadata components ([#782](https://github.com/decentrio/dymension/issues/782)) ([8eebba8](https://github.com/decentrio/dymension/commit/8eebba8869c958c1f995c82c96caecbca1cd3c42))
-* denommetadata ibc middleware panic on non-rollapp transfer  ([#383](https://github.com/decentrio/dymension/issues/383)) ([0e7af57](https://github.com/decentrio/dymension/commit/0e7af573a4daf9dba8000248fc7486ac2b42cdb0))
 * **denommetadata:** correct base denom format ([#1220](https://github.com/decentrio/dymension/issues/1220)) ([6de2c58](https://github.com/decentrio/dymension/commit/6de2c58ef5c2872e8ec06b97313a720aaa459ba4))
 * **denommetadata:** emit events on denom metadata creating and updating ([#1165](https://github.com/decentrio/dymension/issues/1165)) ([ac802eb](https://github.com/decentrio/dymension/commit/ac802ebe23d9b254e9b277e0016e383fa12c9819))
 * **deps:** updated osmosis dep to fix taker fee event ([#1616](https://github.com/decentrio/dymension/issues/1616)) ([a401959](https://github.com/decentrio/dymension/commit/a4019592dbe05687cbeb512ad6d803d7c21691d2))
@@ -77,19 +78,15 @@
 * fix grace period finalization test ([#650](https://github.com/decentrio/dymension/issues/650)) ([c5271b5](https://github.com/decentrio/dymension/commit/c5271b50a01181c9f280d868da7c90da451efd0e))
 * fix osmo dep version ([#696](https://github.com/decentrio/dymension/issues/696)) ([067a132](https://github.com/decentrio/dymension/commit/067a132551ab07fea13202380979c28d652fcacf))
 * fix pfm with delayed ack ([#610](https://github.com/decentrio/dymension/issues/610)) ([8093e21](https://github.com/decentrio/dymension/commit/8093e210f017aec21ce703d45890be4113770ebd))
-* fixed default prefix back to dym ([#244](https://github.com/decentrio/dymension/issues/244)) ([fca3852](https://github.com/decentrio/dymension/commit/fca38521f8e85f48275b80864684a0fd39bbe416))
 * fixed export genesis of denommetadata module ([#756](https://github.com/decentrio/dymension/issues/756)) ([19a588c](https://github.com/decentrio/dymension/commit/19a588ce8ac3c607d4f42f1a362969b8408c238f))
-* fixed genesis script ([#353](https://github.com/decentrio/dymension/issues/353)) ([434fc5b](https://github.com/decentrio/dymension/commit/434fc5b462655e43fb6e539353e6a01d0af14395))
 * fixed go.mod after merged PR ([#751](https://github.com/decentrio/dymension/issues/751)) ([732e425](https://github.com/decentrio/dymension/commit/732e4254d84cef7342a0a95e6792338bf6a20acb))
 * Fixed guide for setting up chain manually ([#468](https://github.com/decentrio/dymension/issues/468)) ([907763b](https://github.com/decentrio/dymension/commit/907763b036a6195e827a60af0d1e28a42470d668))
-* fixed pre-commit hooks and linter comments ([#357](https://github.com/decentrio/dymension/issues/357)) ([9f0cfe6](https://github.com/decentrio/dymension/commit/9f0cfe6c706a2ff12ece7eb79a2bddc7f25f08ad))
 * **fork:** make fraud proposal revision into block identifier ([#1478](https://github.com/decentrio/dymension/issues/1478)) ([3e66754](https://github.com/decentrio/dymension/commit/3e6675487df523ac0e62935cc04f1aa0f92f9d0f))
 * **fraud:** refunding pending outgoing packets ([#816](https://github.com/decentrio/dymension/issues/816)) ([456e6aa](https://github.com/decentrio/dymension/commit/456e6aa4991d3e98a2f96e034758d1adb44928e7))
 * **genesis bridge:** better UX for chains without genesis transfers ([#961](https://github.com/decentrio/dymension/issues/961)) ([8a232ee](https://github.com/decentrio/dymension/commit/8a232ee4d17c3bb74f65f882391650fd9e01d55c))
 * **genesis bridge:** get rollapp by light client ID rather than chain ID in transfer enabled check ([#1339](https://github.com/decentrio/dymension/issues/1339)) ([c9dae97](https://github.com/decentrio/dymension/commit/c9dae97f3641a68cc4886e21240d009b7e8d0cf8))
 * go.work.sum files shouldn't be left when not committing go.work itself ([#684](https://github.com/decentrio/dymension/issues/684)) ([de60aeb](https://github.com/decentrio/dymension/commit/de60aeb5a68b0d63399001e99591efb46770c8e3))
 * **group:** increase group metadata maximum length ([#1606](https://github.com/decentrio/dymension/issues/1606)) ([8441465](https://github.com/decentrio/dymension/commit/8441465010f76df8239fff8621457c5a83fbbff6))
-* hub not producing snapshots ([#292](https://github.com/decentrio/dymension/issues/292)) ([e9b242b](https://github.com/decentrio/dymension/commit/e9b242be9d86961bfa9880934d129751a38ea8be))
 * **ibc:** move the genesis bridge transfer blocker from ante to ics4wrapper ([#1561](https://github.com/decentrio/dymension/issues/1561)) ([6bd4748](https://github.com/decentrio/dymension/commit/6bd4748ea4a06010ce485c2144d2b7982fa4c211))
 * **ibc:** remove denom registration fees. validate OnRecvPacket initially ([#1660](https://github.com/decentrio/dymension/issues/1660)) ([b544906](https://github.com/decentrio/dymension/commit/b5449068e9ebf5d9671b18a405c10e7c93f43efa))
 * **ibc:** wrap IBC error acknowledgement with an error event ([#1195](https://github.com/decentrio/dymension/issues/1195)) ([206984a](https://github.com/decentrio/dymension/commit/206984aed271acbe4cf4aff66d20fdb5c59e1773))
@@ -126,11 +123,9 @@
 * **migration:** fix setting canonical light clients and gauged denom-metadata ([#1680](https://github.com/decentrio/dymension/issues/1680)) ([94f7ccd](https://github.com/decentrio/dymension/commit/94f7ccdf17a846cb27e4ce9056567c58a2095790))
 * **migration:** properly migrates params ([#1459](https://github.com/decentrio/dymension/issues/1459)) ([c7a8a2c](https://github.com/decentrio/dymension/commit/c7a8a2cf6a505d4a61f0611cfae893d518825362))
 * minor audit fixes ([#501](https://github.com/decentrio/dymension/issues/501)) ([78c55b8](https://github.com/decentrio/dymension/commit/78c55b8ef5d67eabc1f68506f2bf225342013053))
-* packet forward middleware panic when transferring tokens with 10^18 denom ([#262](https://github.com/decentrio/dymension/issues/262)) ([bedea9d](https://github.com/decentrio/dymension/commit/bedea9de15753d6b0b220f461d427bac2a32753a))
 * potential int overflow when creating sequencers ([#704](https://github.com/decentrio/dymension/issues/704)) ([d254fe2](https://github.com/decentrio/dymension/commit/d254fe2a9fe98c47e316a0276dba9ca345129181))
 * proof height ante decorator ([#655](https://github.com/decentrio/dymension/issues/655)) ([9072971](https://github.com/decentrio/dymension/commit/90729718dc488e9c27f7477ca17ec7326fb25ec2))
 * refactor usage of err.Error() ([#1286](https://github.com/decentrio/dymension/issues/1286)) ([8d5fe8d](https://github.com/decentrio/dymension/commit/8d5fe8d0e06ec4bbaa41f4a152f543ce20ac5815))
-* removed ibc dependency on x/rollapp/types ([#246](https://github.com/decentrio/dymension/issues/246)) ([228ff62](https://github.com/decentrio/dymension/commit/228ff624f61cf3ec9337a24f8376289d81ffbea3))
 * removed rollapp related logic from init genesis and missing params fix ([#772](https://github.com/decentrio/dymension/issues/772)) ([f0c035d](https://github.com/decentrio/dymension/commit/f0c035d97f1ca456801e844adde75c161f552eb4))
 * Restored power reduction to 100k  ([#450](https://github.com/decentrio/dymension/issues/450)) ([6d7a371](https://github.com/decentrio/dymension/commit/6d7a371d93e7157f92ce62f9cbc1fac43749c092))
 * **rollapp:**  fix packet lookup for non-rollapp chain-id ([#1243](https://github.com/decentrio/dymension/issues/1243)) ([61d5018](https://github.com/decentrio/dymension/commit/61d5018fc28202e3381d711281203da13d2fdfbd))
@@ -208,8 +203,6 @@
 * **streamer:** don't distribute abstained part of sponsored distribution ([#1097](https://github.com/decentrio/dymension/issues/1097)) ([f1df3d7](https://github.com/decentrio/dymension/commit/f1df3d7f7dced4d4ee6505d2bf229d15c4181398))
 * tests that run unwanted ([#1132](https://github.com/decentrio/dymension/issues/1132)) ([fe9ba14](https://github.com/decentrio/dymension/commit/fe9ba149a8bade36971a1f787a883858cdd1ad32))
 * typos in comments ([#554](https://github.com/decentrio/dymension/issues/554)) ([3b75e27](https://github.com/decentrio/dymension/commit/3b75e276af5e5e34a2f41a4e5436807c017dc924))
-* Update dymd source path in Dockerfile ([#352](https://github.com/decentrio/dymension/issues/352)) ([89675e9](https://github.com/decentrio/dymension/commit/89675e92124493060e4675e115ebf662a88595b8))
-* Update goland compatibility version for Docker ([#404](https://github.com/decentrio/dymension/issues/404)) ([536a29e](https://github.com/decentrio/dymension/commit/536a29e14c93e71c4e503bb6dfab0c75f4ecb519))
 * update messages legacy amino codec registration ([#1403](https://github.com/decentrio/dymension/issues/1403)) ([91f4a2a](https://github.com/decentrio/dymension/commit/91f4a2abed1283f67b9793b9c1edcaf5c5199998))
 * update packet forward middleware ([#678](https://github.com/decentrio/dymension/issues/678)) ([e8fb7c4](https://github.com/decentrio/dymension/commit/e8fb7c413b2ccd752d946bc148d190671587c1be))
 * validate the IBC client on fraud proposal ([#701](https://github.com/decentrio/dymension/issues/701)) ([5f5eaab](https://github.com/decentrio/dymension/commit/5f5eaab8201743167da12904976ba90f01ba46ed))
@@ -221,32 +214,20 @@
 
 ### Features
 
-*  ci pipeline ([#39](https://github.com/decentrio/dymension/issues/39)) ([475eead](https://github.com/decentrio/dymension/commit/475eead933ccf64ebfcd3ee17a7f77e505d95999))
 * Add ability to query demand order by id. ([#608](https://github.com/decentrio/dymension/issues/608)) ([a2073a5](https://github.com/decentrio/dymension/commit/a2073a52dfae1ee9b0ca6251ad1538d3c6cf4137))
-* add amm functionality ([#331](https://github.com/decentrio/dymension/issues/331)) ([230afd0](https://github.com/decentrio/dymension/commit/230afd06db2ac29e71a31c0fcc9cc0df5d515de7))
 * Add canonical light client for Rollapps ([#1098](https://github.com/decentrio/dymension/issues/1098)) ([70b87d7](https://github.com/decentrio/dymension/commit/70b87d7583b75589ae8c52d827b4f24ef74314ef))
 * Add Devel IDE debug config ([#666](https://github.com/decentrio/dymension/issues/666)) ([fdf15bb](https://github.com/decentrio/dymension/commit/fdf15bbb3f2990e6e9fdd72302b6f27f13934cb8))
 * add events for sequencer module ([#626](https://github.com/decentrio/dymension/issues/626)) ([2ec1f4f](https://github.com/decentrio/dymension/commit/2ec1f4ff52ab10d54b5ac62a35ea279bf8df6a3e))
-* add incentives gauges to the hub ([#340](https://github.com/decentrio/dymension/issues/340)) ([9f9e5dd](https://github.com/decentrio/dymension/commit/9f9e5dd2b1507e9d6ad98ba1b8a865bb51f9c7bb))
 * add pagination to sensitive endpoints ([#1601](https://github.com/decentrio/dymension/issues/1601)) ([df0a417](https://github.com/decentrio/dymension/commit/df0a417fc0ab73f40230a6f63ca7f7cbd323a6c0))
 * add Query demand orders by status cmd ([#637](https://github.com/decentrio/dymension/issues/637)) ([bcb9a81](https://github.com/decentrio/dymension/commit/bcb9a81a8623a5d3a0ce2c219266a7998c28ced2))
 * Add token metadata registration on rollapp genesis event ([#695](https://github.com/decentrio/dymension/issues/695)) ([657138c](https://github.com/decentrio/dymension/commit/657138cd24ceb620af193d99da85f75913ae5b45))
 * add/update multiple denom metadata in same proposal ([#661](https://github.com/decentrio/dymension/issues/661)) ([a62000d](https://github.com/decentrio/dymension/commit/a62000dfbc8569f907bde560b29a71cefe83d532))
-* added /healthcheck endpoint that return 200OK if hub's height progress… ([#241](https://github.com/decentrio/dymension/issues/241)) ([b173915](https://github.com/decentrio/dymension/commit/b173915a5a43b1e28c74649f619008a248319ded))
 * added ante handler to pass proofHeight to middleware ([#634](https://github.com/decentrio/dymension/issues/634)) ([ee0788e](https://github.com/decentrio/dymension/commit/ee0788ee39c56ff8aac3acb1d1ebcce8da1526fb))
-* added inspect command ([#296](https://github.com/decentrio/dymension/issues/296)) ([f0604ee](https://github.com/decentrio/dymension/commit/f0604ee6cb17f6741610656833a5f4a8d77d8c25))
-* added invariants for streamer ([#422](https://github.com/decentrio/dymension/issues/422)) ([eb17c75](https://github.com/decentrio/dymension/commit/eb17c753922577c03da02940eb3f680ab4e53170))
-* allow sequencer to register on multiple rollapps ([#308](https://github.com/decentrio/dymension/issues/308)) ([c808d79](https://github.com/decentrio/dymension/commit/c808d79999f9c0d662dc9954230b94460b23ce1e))
-* Allows querying for a rollapp by it's EIP155  ([#299](https://github.com/decentrio/dymension/issues/299)) ([4ee6b75](https://github.com/decentrio/dymension/commit/4ee6b752dae868b760cb85e2f2533a261038a3ef))
-* amm modifications for the dymension hub ([#332](https://github.com/decentrio/dymension/issues/332)) ([36c13d5](https://github.com/decentrio/dymension/commit/36c13d56eb52be03ed0e405b85f5265a03c46e8e))
 * **ante:** allow rejection based on depth ([#1443](https://github.com/decentrio/dymension/issues/1443)) ([17b5be7](https://github.com/decentrio/dymension/commit/17b5be7e8ec03d82d09a1f46175cd5d9c845abba))
 * bridging fee middleware ([#899](https://github.com/decentrio/dymension/issues/899)) ([a74ffb0](https://github.com/decentrio/dymension/commit/a74ffb0cec00768bbb8dbe3fd6413e66388010d3))
 * change authorized eibc lp fee acceptance criteria ([#1471](https://github.com/decentrio/dymension/issues/1471)) ([80a53c7](https://github.com/decentrio/dymension/commit/80a53c79cf0e69158b2680c8098bae6ced677f84))
 * **common:** added more attributes to rollapp packet delayed ack event ([#1381](https://github.com/decentrio/dymension/issues/1381)) ([c150a43](https://github.com/decentrio/dymension/commit/c150a439dd82be0ba838ae64ffc13ff02e97017b))
 * create gov proposal for token metadata registration ([#632](https://github.com/decentrio/dymension/issues/632)) ([de8e643](https://github.com/decentrio/dymension/commit/de8e643d00ad9302393561c9e6d3c8a047f80217))
-* create irc request ([#229](https://github.com/decentrio/dymension/issues/229)) ([a30fd43](https://github.com/decentrio/dymension/commit/a30fd4355f63b7b8f93912b309163a245b5dad3e))
-* create shared package ([#60](https://github.com/decentrio/dymension/issues/60)) ([0068d1c](https://github.com/decentrio/dymension/commit/0068d1c20dd385fd6ef39efa3be3aab45b226665))
-* delay ack middleware ([#361](https://github.com/decentrio/dymension/issues/361)) ([4cefec0](https://github.com/decentrio/dymension/commit/4cefec086c6a43594e2de8c25ffa592ad33ee2b0))
 * **delayedack:** Add type filter for delayedack query ([#860](https://github.com/decentrio/dymension/issues/860)) ([57eca21](https://github.com/decentrio/dymension/commit/57eca21cb5a3b91ebfe08f2e48ee8eeca6534a10))
 * **delayedack:** added efficient query for pending packets by addr ([#1385](https://github.com/decentrio/dymension/issues/1385)) ([d577982](https://github.com/decentrio/dymension/commit/d577982f5d915d6184449603ec7b0e1f2f34aad5))
 * **delayedack:** delayedack invariant for finalized and reverted packets ([#686](https://github.com/decentrio/dymension/issues/686)) ([cecb03c](https://github.com/decentrio/dymension/commit/cecb03c54194535215ce21e248b947697067b6fd))
@@ -257,7 +238,6 @@
 * **delayedack:** paginate rollapp packets when deleting them ([#972](https://github.com/decentrio/dymension/issues/972)) ([1b11625](https://github.com/decentrio/dymension/commit/1b11625498d75a96523a9c49f72a6ebad627c93b))
 * **delayedack:** rollapp ibc state validation upon state update ([#641](https://github.com/decentrio/dymension/issues/641)) ([70aa5b6](https://github.com/decentrio/dymension/commit/70aa5b6446c2a6efff3b5041d132068a6ed24d3f))
 * delete finalized rollapp packets  ([#535](https://github.com/decentrio/dymension/issues/535)) ([eefc4f5](https://github.com/decentrio/dymension/commit/eefc4f59c04b25e31d479db03db17a6bab6a48b8))
-* delete vue ([#68](https://github.com/decentrio/dymension/issues/68)) ([2ac5476](https://github.com/decentrio/dymension/commit/2ac5476c9ab20fedc20fa68c69ae19be629e74ae))
 * denommetadata module hook for denom creation and update ([#664](https://github.com/decentrio/dymension/issues/664)) ([21a17f1](https://github.com/decentrio/dymension/commit/21a17f12866bb390d426a6ed344f089e254a0815))
 * **denommetadata:** charge extra fee for IBC denom metadata registration ([#1609](https://github.com/decentrio/dymension/issues/1609)) ([8df230b](https://github.com/decentrio/dymension/commit/8df230b4c7c498ada476ad3a58d113e0aec312b5))
 * **denommetadata:** register IBC denom on transfer  ([#956](https://github.com/decentrio/dymension/issues/956)) ([5ba056c](https://github.com/decentrio/dymension/commit/5ba056cb721d23d9cfd2423694dec9d6c3474cca))
@@ -291,8 +271,6 @@
 * **hard-fork:** Implement rollapp hard fork  ([#1354](https://github.com/decentrio/dymension/issues/1354)) ([5deae85](https://github.com/decentrio/dymension/commit/5deae8512b53e41b64c0cba1209151802ada06d9))
 * **ibc transfer:** Register IBC denom on transfer ([#900](https://github.com/decentrio/dymension/issues/900)) ([78494bd](https://github.com/decentrio/dymension/commit/78494bd3fec5c1a3a01db7b1c1c0cf2acfff882b))
 * **ibc:** add debug log and reason when client fails to be made canonical ([#1349](https://github.com/decentrio/dymension/issues/1349)) ([a41e964](https://github.com/decentrio/dymension/commit/a41e9647a52f1bb0e48712ea7b7ef464aa9fe244))
-* implement incentives manager ([#349](https://github.com/decentrio/dymension/issues/349)) ([07072c1](https://github.com/decentrio/dymension/commit/07072c120998dcb9a6e47cc578f3bdd50849c346))
-* implement streamer module ([#369](https://github.com/decentrio/dymension/issues/369)) ([e5e2c05](https://github.com/decentrio/dymension/commit/e5e2c05bea55312704095252f55b03c2cd83eae6))
 * **incentives:**  earning events  ([#1545](https://github.com/decentrio/dymension/issues/1545)) ([d2b9920](https://github.com/decentrio/dymension/commit/d2b9920d9496f0408c9ed494c033a8dffe3523ca))
 * **incentives:** added fees for adding to gauge and gauge creation ([#1188](https://github.com/decentrio/dymension/issues/1188)) ([7e83549](https://github.com/decentrio/dymension/commit/7e83549dd623a3f5318deff97932c8b1c339ec67))
 * **incentives:** feature flag to enable/disable epoch end distribution ([#1648](https://github.com/decentrio/dymension/issues/1648)) ([c3eaedf](https://github.com/decentrio/dymension/commit/c3eaedffb8886fd219819cd3a21304f931352bed))
@@ -301,7 +279,6 @@
 * **incentives:** send rewards to rollapp creator address ([#1047](https://github.com/decentrio/dymension/issues/1047)) ([88a5f9e](https://github.com/decentrio/dymension/commit/88a5f9e0b9c236439536d4f76062d3018eead68e))
 * invariants for rollapp and sequencer modules ([#603](https://github.com/decentrio/dymension/issues/603)) ([3cf597f](https://github.com/decentrio/dymension/commit/3cf597f01e05901287075ef44b749fd10fd659e2))
 * **invariants:** add several invariants across modules ([#1514](https://github.com/decentrio/dymension/issues/1514)) ([3109e57](https://github.com/decentrio/dymension/commit/3109e579353ee0c0a64b3e9e2759b55f74416a80))
-* IRC module and IBC message interceptor refactor ([#200](https://github.com/decentrio/dymension/issues/200)) ([e7131ff](https://github.com/decentrio/dymension/commit/e7131ffb3987092fca3517ea36d23c13fe6a601c))
 * **iro,amm:** adding `closing price` event attribute for trades ([#1359](https://github.com/decentrio/dymension/issues/1359)) ([084f756](https://github.com/decentrio/dymension/commit/084f756abc454ab38bcd3f538de1d53dcd842ac7))
 * **iro:** add denom to buy, sell and claim events ([#1460](https://github.com/decentrio/dymension/issues/1460)) ([42e2184](https://github.com/decentrio/dymension/commit/42e21849bf92c0f1f0d5951e51638f615f5a4cd2))
 * **iro:** add tradable only filter to IRO plans ([#1358](https://github.com/decentrio/dymension/issues/1358)) ([632c277](https://github.com/decentrio/dymension/commit/632c277be450097ab6088e16a3ec3cedb24bed87))
@@ -318,7 +295,6 @@
 * **lightclient:** Add query for getting canonical channel  ([#1637](https://github.com/decentrio/dymension/issues/1637)) ([58cbe8d](https://github.com/decentrio/dymension/commit/58cbe8d036dd5cd087a9db07f3a9f771b8f58a15))
 * **liveness:** better tests | general code cleanup ([#1532](https://github.com/decentrio/dymension/issues/1532)) ([6734dc3](https://github.com/decentrio/dymension/commit/6734dc37bd1cebb400436b079fdba979c3152e29))
 * **liveness:** improve tests ([#1623](https://github.com/decentrio/dymension/issues/1623)) ([de9f463](https://github.com/decentrio/dymension/commit/de9f46340e1ca704e825313909512ce1937f979f))
-* lockdrop module ([#381](https://github.com/decentrio/dymension/issues/381)) ([6f9bf00](https://github.com/decentrio/dymension/commit/6f9bf00d967bfdcf1cd41faeb6834b40200dde9d))
 * **lockup:** added const fee for locking tokens ([#1543](https://github.com/decentrio/dymension/issues/1543)) ([93b6385](https://github.com/decentrio/dymension/commit/93b6385b94a9f3a59df8964dc67e535e92fa8dac))
 * **lockup:** moved the module from the Osmosis fork ([#1154](https://github.com/decentrio/dymension/issues/1154)) ([d440dfa](https://github.com/decentrio/dymension/commit/d440dfa78ac44dd9ef739b04f1145d2fff0f9b83))
 * **migration:** add migrations for sequencer module ([#1421](https://github.com/decentrio/dymension/issues/1421)) ([3b31d78](https://github.com/decentrio/dymension/commit/3b31d78235879f6253402d173f8f0ca8d04df215))
@@ -326,13 +302,10 @@
 * **migrations:** crisis module deprecation ([#1444](https://github.com/decentrio/dymension/issues/1444)) ([cab29c2](https://github.com/decentrio/dymension/commit/cab29c2f3a4526e6d290b7625b22adc4e9a986ed))
 * **migrations:** next proposer in state info ([#1482](https://github.com/decentrio/dymension/issues/1482)) ([a308fd0](https://github.com/decentrio/dymension/commit/a308fd03b2c4256d57576bfb21c99ab13f9de263))
 * **migrations:** testnet rollapps ([#1475](https://github.com/decentrio/dymension/issues/1475)) ([0bc444c](https://github.com/decentrio/dymension/commit/0bc444c63458e9590b151198868cb353512670f6))
-* refactored hooks from `panic` to errors ([#259](https://github.com/decentrio/dymension/issues/259)) ([6d41b3b](https://github.com/decentrio/dymension/commit/6d41b3b948186f725c31b54afb7d7c40f47cd3e3))
-* register denom metadata for new rollapp received ibc ([#313](https://github.com/decentrio/dymension/issues/313)) ([bfb96d9](https://github.com/decentrio/dymension/commit/bfb96d9198fb10846d27f2b87ffd181ea974019f))
 * Register incentives and sponsorship amino message to support eip712 ([#1240](https://github.com/decentrio/dymension/issues/1240)) ([bb2cd89](https://github.com/decentrio/dymension/commit/bb2cd8927211109d225800663ef21ce04c0e1b70))
 * removed incentives feature flag and decreased IRO `MinEpochsPaidOver` default value ([#1652](https://github.com/decentrio/dymension/issues/1652)) ([02cbaec](https://github.com/decentrio/dymension/commit/02cbaecdc358b49590b5ff6ab578dea355375dda))
 * Rollapp genesis tokens upon channel creation ([#642](https://github.com/decentrio/dymension/issues/642)) ([c53c2a7](https://github.com/decentrio/dymension/commit/c53c2a749aeffe10f3f0132f4fb1d08e03616464))
 * rollapp royalties ([#1368](https://github.com/decentrio/dymension/issues/1368)) ([a6f9c55](https://github.com/decentrio/dymension/commit/a6f9c558526aeea2391c7a4f91a26798ddc992ee))
-* **rollapp:** add ability to create a rollapp ([#36](https://github.com/decentrio/dymension/issues/36)) ([d3df68e](https://github.com/decentrio/dymension/commit/d3df68e98a24c1c03c5082a07582b8e1e96ec91b))
 * **rollapp:** add apps to rollapp ([#1131](https://github.com/decentrio/dymension/issues/1131)) ([35f7a94](https://github.com/decentrio/dymension/commit/35f7a94c7b58c9d02e8b0454c59713d899ea2cc5))
 * **rollapp:** add genesis url to metadata ([#1082](https://github.com/decentrio/dymension/issues/1082)) ([61d5ab1](https://github.com/decentrio/dymension/commit/61d5ab18e17758f88b0b3b3a888304e9da09578c))
 * **rollapp:** add nim and mande domain name in migration ([#1498](https://github.com/decentrio/dymension/issues/1498)) ([2295106](https://github.com/decentrio/dymension/commit/2295106b1c87fcedb7d57a9c53eb0998a4471e6c))
@@ -341,8 +314,6 @@
 * **rollapp:** allow rollapps with no native token ([#1654](https://github.com/decentrio/dymension/issues/1654)) ([a9d5d6b](https://github.com/decentrio/dymension/commit/a9d5d6bb0ba1b8102dc92a0a1c3b83b473352bba))
 * **rollapp:** allow supplying bech32 and genesis checksum in update rather than create ([#1089](https://github.com/decentrio/dymension/issues/1089)) ([c0216b0](https://github.com/decentrio/dymension/commit/c0216b0341f2762e84231925ad5dd80797b4efbe))
 * **rollapp:** create gov prop for updating genesis info ([#1570](https://github.com/decentrio/dymension/issues/1570)) ([81a984c](https://github.com/decentrio/dymension/commit/81a984cb5fa4ec80cbb095559af59818b11677a0))
-* **rollapp:** create rollapp tests ([#57](https://github.com/decentrio/dymension/issues/57)) ([937b981](https://github.com/decentrio/dymension/commit/937b981a013bf00c92fa81cf53a57a6b71ed8d22))
-* **rollapp:** create state status enum & dispute_period_in_blocks param ([#62](https://github.com/decentrio/dymension/issues/62)) ([3724e50](https://github.com/decentrio/dymension/commit/3724e5002b6cb02d11598209ddf917edbcac2fc3))
 * **rollapp:** delete stale state updates ([#1176](https://github.com/decentrio/dymension/issues/1176)) ([0f876b3](https://github.com/decentrio/dymension/commit/0f876b3a9fd71a0c27b0e7f68420a86251ad56be))
 * **rollapp:** DRS versions ([#1223](https://github.com/decentrio/dymension/issues/1223)) ([05e445c](https://github.com/decentrio/dymension/commit/05e445c00e8cfaff0c8891bde51908e0d80c9c3c))
 * **rollapp:** enforce EIP155 chain ID for rollapp creation ([#1020](https://github.com/decentrio/dymension/issues/1020)) ([55a7517](https://github.com/decentrio/dymension/commit/55a7517ceaa151cb22c4f40064f7aa1ae5b89d88))
@@ -358,34 +329,27 @@
 * **rollapp:** refactor rollapp cli to be more useful ([#842](https://github.com/decentrio/dymension/issues/842)) ([90e8b37](https://github.com/decentrio/dymension/commit/90e8b37f92473493a33ee13ef839a2efef90b84a))
 * **rollapp:** register rollapp amino messages to support EIP712 ([#1229](https://github.com/decentrio/dymension/issues/1229)) ([f140cd1](https://github.com/decentrio/dymension/commit/f140cd1dd561cefb3e6562cbf4379b88cd16400d))
 * **rollapp:** remove alias from rollapp ([#1034](https://github.com/decentrio/dymension/issues/1034)) ([71eac1b](https://github.com/decentrio/dymension/commit/71eac1b3a2a0c8ab4696c36314a3670462c66a23))
-* **rollapp:** rollapp deployers whitelist ([#79](https://github.com/decentrio/dymension/issues/79)) ([83a762c](https://github.com/decentrio/dymension/commit/83a762c8e04f4fd53988099f9a641593727103ab))
-* **rollapp:** rollapp state finalization ([#74](https://github.com/decentrio/dymension/issues/74)) ([836fd47](https://github.com/decentrio/dymension/commit/836fd47acb9e91c5c5d27930716fc06ff1845697))
-* **rollapp:** state index refactor ([#73](https://github.com/decentrio/dymension/issues/73)) ([4d6ecf1](https://github.com/decentrio/dymension/commit/4d6ecf17ad336b0ac381562f33788c0f526eac42))
 * **rollapp:** store all rollapp revisions ([#1476](https://github.com/decentrio/dymension/issues/1476)) ([4cad7dc](https://github.com/decentrio/dymension/commit/4cad7dc256c2835629a39bee431ff1af2a9bfbb6))
 * **rollapp:** store rollapp revision history ([#1507](https://github.com/decentrio/dymension/issues/1507)) ([20c6e5a](https://github.com/decentrio/dymension/commit/20c6e5a4a984f9d09edeadf88f80faebf82db0f6))
 * **rollapp:** verify genesis checksum is same in hub and rollapp ([#1384](https://github.com/decentrio/dymension/issues/1384)) ([5386029](https://github.com/decentrio/dymension/commit/53860295cce88229f16334e43dd1db3d35f2d4a7))
 * **scripts:** updated scripts for local run, added sponsored stream creation ([#1046](https://github.com/decentrio/dymension/issues/1046)) ([c8fc1fd](https://github.com/decentrio/dymension/commit/c8fc1fdd20b6138b4acd7465a1cc3cb18c9fe077))
 * sequencer bonding and slashing mvp ([#579](https://github.com/decentrio/dymension/issues/579)) ([5c9d49f](https://github.com/decentrio/dymension/commit/5c9d49fbc90e636282da50c560f42b626f33547a))
 * **sequencer, rollapp:** liveness slashing and jailing ([#1009](https://github.com/decentrio/dymension/issues/1009)) ([04bd9df](https://github.com/decentrio/dymension/commit/04bd9df0eec8abff6e24fc8e089be7b596227216))
-* **sequencer:** add ability to create sequencer ([#41](https://github.com/decentrio/dymension/issues/41)) ([8bd90e2](https://github.com/decentrio/dymension/commit/8bd90e2689635ec61f8c44f82683ecbdc358cfb6)), closes [#39](https://github.com/decentrio/dymension/issues/39)
 * **sequencer:** add fee denom to sequencer metadata ([#1662](https://github.com/decentrio/dymension/issues/1662)) ([c955648](https://github.com/decentrio/dymension/commit/c955648bacbff2d9ddaf089f1f99a20da0cef65d))
 * **sequencer:** add proposal type and handler for punishing sequencer ([#1581](https://github.com/decentrio/dymension/issues/1581)) ([0988440](https://github.com/decentrio/dymension/commit/09884405ba6c52212b54c9eb989cd5de9a2da24a))
 * **sequencer:** added reward addr and whitelisted relayers for sequencer ([#1313](https://github.com/decentrio/dymension/issues/1313)) ([8739ceb](https://github.com/decentrio/dymension/commit/8739cebebfacec254e750e798721e5a90bd6c1d8))
 * **sequencer:** Allow a sequencer to decrease their bond ([#1031](https://github.com/decentrio/dymension/issues/1031)) ([acd9d13](https://github.com/decentrio/dymension/commit/acd9d13935a98dd43d13affdd440a78c85f3a961))
 * **sequencer:** Allow a sequencer to increase their bond  ([#1015](https://github.com/decentrio/dymension/issues/1015)) ([7d27b75](https://github.com/decentrio/dymension/commit/7d27b75aeb8bf7105583ae35d2d02ade6e972afd))
 * **sequencer:** conditional unbonding + kick for liveness ([#1343](https://github.com/decentrio/dymension/issues/1343)) ([76aa1e1](https://github.com/decentrio/dymension/commit/76aa1e103e0440d4a96bac27f09ae03a27acf3fc))
-* **sequencer:** create sequencer tests ([#58](https://github.com/decentrio/dymension/issues/58)) ([25a316a](https://github.com/decentrio/dymension/commit/25a316af80147ea1014fa2397bae2b2679f7ce32))
 * **sequencer:** Defining invariants around bond reductions ([#1144](https://github.com/decentrio/dymension/issues/1144)) ([d986472](https://github.com/decentrio/dymension/commit/d986472a731faaf0653e97e089124cacb5c6a738))
 * **sequencer:** enforce endpoints on sequencer registration ([#1043](https://github.com/decentrio/dymension/issues/1043)) ([c2c92a9](https://github.com/decentrio/dymension/commit/c2c92a9274a3c1544b9b232bee16678029f4b682))
 * **sequencer:** Implement genesis Import/Export for Bond Reductions ([#1075](https://github.com/decentrio/dymension/issues/1075)) ([155db63](https://github.com/decentrio/dymension/commit/155db63cf42939f948199ea85f66027544df8304))
 * **sequencer:** kick rework (dishonor) ([#1647](https://github.com/decentrio/dymension/issues/1647)) ([29d227f](https://github.com/decentrio/dymension/commit/29d227f910f2165c2f4cba5a0d1de7bcc37df5dc))
 * **sequencer:** query all proposers ([#1221](https://github.com/decentrio/dymension/issues/1221)) ([e670723](https://github.com/decentrio/dymension/commit/e67072380dec2269b9b6aab4d6160aa5961fab53))
-* **sequencer:** sequencer scheduler ([#64](https://github.com/decentrio/dymension/issues/64)) ([6cca902](https://github.com/decentrio/dymension/commit/6cca9024fc09d08b28ae76f76c1bef92af30a5df))
 * **sequencers:** sequencer rotation support ([#1006](https://github.com/decentrio/dymension/issues/1006)) ([e50966c](https://github.com/decentrio/dymension/commit/e50966c0c82d340a4d2c6b36ecc354b00a900e09))
 * **sequencers:** sort sequencers by bond when rotating ([#724](https://github.com/decentrio/dymension/issues/724)) ([3b4b731](https://github.com/decentrio/dymension/commit/3b4b7314f8b3fff54a715595933cba3dc8516e18))
 * **sequencer:** support rotation misbehavior detection  ([#1345](https://github.com/decentrio/dymension/issues/1345)) ([43db5fd](https://github.com/decentrio/dymension/commit/43db5fdd831f0b78578bdc1a7f0f45f7a43af783))
 * **sequencers:** validate sequencer `unbonding_time` greater than `dispute_period` ([#1115](https://github.com/decentrio/dymension/issues/1115)) ([eddfc50](https://github.com/decentrio/dymension/commit/eddfc50581f58ba34c2372b83119333c5d9fd06f))
-* simulation tests ([#76](https://github.com/decentrio/dymension/issues/76)) ([3fc38ce](https://github.com/decentrio/dymension/commit/3fc38ceeac18acd8b91d8eb1e591f2994aa0e8a7))
 * **sponsorship:** added proto contracts ([#990](https://github.com/decentrio/dymension/issues/990)) ([54c0fca](https://github.com/decentrio/dymension/commit/54c0fca5fada0292428f1721ff2475d4f8590f1d))
 * **sponsorship:** added tests to verify staking power truncation issue ([#1523](https://github.com/decentrio/dymension/issues/1523)) ([c6826d7](https://github.com/decentrio/dymension/commit/c6826d75e77f6e16b09157d05b0caefdd7994698))
 * **sponsorship:** added voting mechanisms and staking hooks ([#1044](https://github.com/decentrio/dymension/issues/1044)) ([836e500](https://github.com/decentrio/dymension/commit/836e50018d63d2e3caba522c91f4e932b9c540cd))
@@ -395,13 +359,11 @@
 * **sponsorship:** remove sequencer bonded enforcement from rollapp gauge ([#1497](https://github.com/decentrio/dymension/issues/1497)) ([f74b114](https://github.com/decentrio/dymension/commit/f74b114a619066d0715bc43791ff5aa4606558d0))
 * **sponsorship:** updated module params comment ([#1199](https://github.com/decentrio/dymension/issues/1199)) ([904c0d1](https://github.com/decentrio/dymension/commit/904c0d168216c2e9e6c8270e121a94711693dcaa))
 * **sponsorship:** updated the scale system for gauge weights ([#1190](https://github.com/decentrio/dymension/issues/1190)) ([094de0c](https://github.com/decentrio/dymension/commit/094de0cf8601fa2cc2bbf29042bade1e77b6fe06))
-* streamer additional gov proposals ([#424](https://github.com/decentrio/dymension/issues/424)) ([70af875](https://github.com/decentrio/dymension/commit/70af8755d2cd9a050cbc1372638d4e5c848a2dde))
 * **streamer:** added sponsored distribution support ([#1045](https://github.com/decentrio/dymension/issues/1045)) ([5933d5c](https://github.com/decentrio/dymension/commit/5933d5c8872ca39e01408f6dc7e1d6ef30547502))
 * **streamer:** added streamer pagination ([#1100](https://github.com/decentrio/dymension/issues/1100)) ([8a7b79e](https://github.com/decentrio/dymension/commit/8a7b79ec97304376dac52ac5e603498a15b91b8b))
 * **streamer:** distribute rewards immediately in the current block ([#1173](https://github.com/decentrio/dymension/issues/1173)) ([14877e9](https://github.com/decentrio/dymension/commit/14877e9ef3b3f404e17f8a85df2bbda22d3ad4d6))
 * support automatic eibc order creation for timeout ([#598](https://github.com/decentrio/dymension/issues/598)) ([86db62a](https://github.com/decentrio/dymension/commit/86db62a74e6dcd9e95eaaf170c3c8deccd7d07f4))
 * **swagger:** add make command `proto-swagger-gen` ([#856](https://github.com/decentrio/dymension/issues/856)) ([d79ac7b](https://github.com/decentrio/dymension/commit/d79ac7ba7ce6d629d02420d9be30d3cf07a89bd7))
-* update state ([#63](https://github.com/decentrio/dymension/issues/63)) ([2a4290d](https://github.com/decentrio/dymension/commit/2a4290d6047178042a19b74795ddef1301461797))
 * **upgrade:** add upgrade handler for new and modified modules ([#783](https://github.com/decentrio/dymension/issues/783)) ([1a1da34](https://github.com/decentrio/dymension/commit/1a1da347b0aa6032a72b59cad2ed8d011dedcfea))
 
 
@@ -413,6 +375,84 @@
 ### Reverts
 
 * **streamer:** don't distribute abstained part of sponsored distri… ([#1117](https://github.com/decentrio/dymension/issues/1117)) ([908cb39](https://github.com/decentrio/dymension/commit/908cb39023ef48f2b2f9ee2627e02d36ae6e6ae9))
+
+
+
+# [2.0.0-alpha.1](https://github.com/decentrio/dymension/compare/v1.0.0-rc1...v2.0.0-alpha.1) (2023-12-06)
+
+
+### Bug Fixes
+
+* bug missing denom metadata ([#314](https://github.com/decentrio/dymension/issues/314)) ([1e68d77](https://github.com/decentrio/dymension/commit/1e68d770a85b48d9df9f811418d7df844517251e))
+* denommetadata ibc middleware panic on non-rollapp transfer  ([#383](https://github.com/decentrio/dymension/issues/383)) ([0e7af57](https://github.com/decentrio/dymension/commit/0e7af573a4daf9dba8000248fc7486ac2b42cdb0))
+* fixed genesis script ([#353](https://github.com/decentrio/dymension/issues/353)) ([434fc5b](https://github.com/decentrio/dymension/commit/434fc5b462655e43fb6e539353e6a01d0af14395))
+* fixed pre-commit hooks and linter comments ([#357](https://github.com/decentrio/dymension/issues/357)) ([9f0cfe6](https://github.com/decentrio/dymension/commit/9f0cfe6c706a2ff12ece7eb79a2bddc7f25f08ad))
+* hub not producing snapshots ([#292](https://github.com/decentrio/dymension/issues/292)) ([e9b242b](https://github.com/decentrio/dymension/commit/e9b242be9d86961bfa9880934d129751a38ea8be))
+* Update dymd source path in Dockerfile ([#352](https://github.com/decentrio/dymension/issues/352)) ([89675e9](https://github.com/decentrio/dymension/commit/89675e92124493060e4675e115ebf662a88595b8))
+* Update goland compatibility version for Docker ([#404](https://github.com/decentrio/dymension/issues/404)) ([536a29e](https://github.com/decentrio/dymension/commit/536a29e14c93e71c4e503bb6dfab0c75f4ecb519))
+
+
+### Features
+
+* add amm functionality ([#331](https://github.com/decentrio/dymension/issues/331)) ([230afd0](https://github.com/decentrio/dymension/commit/230afd06db2ac29e71a31c0fcc9cc0df5d515de7))
+* add incentives gauges to the hub ([#340](https://github.com/decentrio/dymension/issues/340)) ([9f9e5dd](https://github.com/decentrio/dymension/commit/9f9e5dd2b1507e9d6ad98ba1b8a865bb51f9c7bb))
+* added inspect command ([#296](https://github.com/decentrio/dymension/issues/296)) ([f0604ee](https://github.com/decentrio/dymension/commit/f0604ee6cb17f6741610656833a5f4a8d77d8c25))
+* added invariants for streamer ([#422](https://github.com/decentrio/dymension/issues/422)) ([eb17c75](https://github.com/decentrio/dymension/commit/eb17c753922577c03da02940eb3f680ab4e53170))
+* allow sequencer to register on multiple rollapps ([#308](https://github.com/decentrio/dymension/issues/308)) ([c808d79](https://github.com/decentrio/dymension/commit/c808d79999f9c0d662dc9954230b94460b23ce1e))
+* Allows querying for a rollapp by it's EIP155  ([#299](https://github.com/decentrio/dymension/issues/299)) ([4ee6b75](https://github.com/decentrio/dymension/commit/4ee6b752dae868b760cb85e2f2533a261038a3ef))
+* amm modifications for the dymension hub ([#332](https://github.com/decentrio/dymension/issues/332)) ([36c13d5](https://github.com/decentrio/dymension/commit/36c13d56eb52be03ed0e405b85f5265a03c46e8e))
+* delay ack middleware ([#361](https://github.com/decentrio/dymension/issues/361)) ([4cefec0](https://github.com/decentrio/dymension/commit/4cefec086c6a43594e2de8c25ffa592ad33ee2b0))
+* implement incentives manager ([#349](https://github.com/decentrio/dymension/issues/349)) ([07072c1](https://github.com/decentrio/dymension/commit/07072c120998dcb9a6e47cc578f3bdd50849c346))
+* implement streamer module ([#369](https://github.com/decentrio/dymension/issues/369)) ([e5e2c05](https://github.com/decentrio/dymension/commit/e5e2c05bea55312704095252f55b03c2cd83eae6))
+* lockdrop module ([#381](https://github.com/decentrio/dymension/issues/381)) ([6f9bf00](https://github.com/decentrio/dymension/commit/6f9bf00d967bfdcf1cd41faeb6834b40200dde9d))
+* register denom metadata for new rollapp received ibc ([#313](https://github.com/decentrio/dymension/issues/313)) ([bfb96d9](https://github.com/decentrio/dymension/commit/bfb96d9198fb10846d27f2b87ffd181ea974019f))
+* streamer additional gov proposals ([#424](https://github.com/decentrio/dymension/issues/424)) ([70af875](https://github.com/decentrio/dymension/commit/70af8755d2cd9a050cbc1372638d4e5c848a2dde))
+
+
+
+# [1.0.0-rc1](https://github.com/decentrio/dymension/compare/v0.2.0-beta...v1.0.0-rc1) (2023-06-22)
+
+
+### Bug Fixes
+
+* changed denom to udym ([#194](https://github.com/decentrio/dymension/issues/194)) ([07e2e21](https://github.com/decentrio/dymension/commit/07e2e21a0f28629f0cee6b28d2e983312d5b18ae))
+* fixed default prefix back to dym ([#244](https://github.com/decentrio/dymension/issues/244)) ([fca3852](https://github.com/decentrio/dymension/commit/fca38521f8e85f48275b80864684a0fd39bbe416))
+* packet forward middleware panic when transferring tokens with 10^18 denom ([#262](https://github.com/decentrio/dymension/issues/262)) ([bedea9d](https://github.com/decentrio/dymension/commit/bedea9de15753d6b0b220f461d427bac2a32753a))
+* removed ibc dependency on x/rollapp/types ([#246](https://github.com/decentrio/dymension/issues/246)) ([228ff62](https://github.com/decentrio/dymension/commit/228ff624f61cf3ec9337a24f8376289d81ffbea3))
+
+
+### Features
+
+* added /healthcheck endpoint that return 200OK if hub's height progress… ([#241](https://github.com/decentrio/dymension/issues/241)) ([b173915](https://github.com/decentrio/dymension/commit/b173915a5a43b1e28c74649f619008a248319ded))
+* create irc request ([#229](https://github.com/decentrio/dymension/issues/229)) ([a30fd43](https://github.com/decentrio/dymension/commit/a30fd4355f63b7b8f93912b309163a245b5dad3e))
+* IRC module and IBC message interceptor refactor ([#200](https://github.com/decentrio/dymension/issues/200)) ([e7131ff](https://github.com/decentrio/dymension/commit/e7131ffb3987092fca3517ea36d23c13fe6a601c))
+* refactored hooks from `panic` to errors ([#259](https://github.com/decentrio/dymension/issues/259)) ([6d41b3b](https://github.com/decentrio/dymension/commit/6d41b3b948186f725c31b54afb7d7c40f47cd3e3))
+
+
+
+# [0.2.0-beta](https://github.com/decentrio/dymension/compare/v0.1.0-alpha...v0.2.0-beta) (2023-01-31)
+
+
+
+# [0.1.0-alpha](https://github.com/decentrio/dymension/compare/d3df68e98a24c1c03c5082a07582b8e1e96ec91b...v0.1.0-alpha) (2022-09-20)
+
+
+### Features
+
+*  ci pipeline ([#39](https://github.com/decentrio/dymension/issues/39)) ([475eead](https://github.com/decentrio/dymension/commit/475eead933ccf64ebfcd3ee17a7f77e505d95999))
+* create shared package ([#60](https://github.com/decentrio/dymension/issues/60)) ([0068d1c](https://github.com/decentrio/dymension/commit/0068d1c20dd385fd6ef39efa3be3aab45b226665))
+* delete vue ([#68](https://github.com/decentrio/dymension/issues/68)) ([2ac5476](https://github.com/decentrio/dymension/commit/2ac5476c9ab20fedc20fa68c69ae19be629e74ae))
+* **rollapp:** add ability to create a rollapp ([#36](https://github.com/decentrio/dymension/issues/36)) ([d3df68e](https://github.com/decentrio/dymension/commit/d3df68e98a24c1c03c5082a07582b8e1e96ec91b))
+* **rollapp:** create rollapp tests ([#57](https://github.com/decentrio/dymension/issues/57)) ([937b981](https://github.com/decentrio/dymension/commit/937b981a013bf00c92fa81cf53a57a6b71ed8d22))
+* **rollapp:** create state status enum & dispute_period_in_blocks param ([#62](https://github.com/decentrio/dymension/issues/62)) ([3724e50](https://github.com/decentrio/dymension/commit/3724e5002b6cb02d11598209ddf917edbcac2fc3))
+* **rollapp:** rollapp deployers whitelist ([#79](https://github.com/decentrio/dymension/issues/79)) ([83a762c](https://github.com/decentrio/dymension/commit/83a762c8e04f4fd53988099f9a641593727103ab))
+* **rollapp:** rollapp state finalization ([#74](https://github.com/decentrio/dymension/issues/74)) ([836fd47](https://github.com/decentrio/dymension/commit/836fd47acb9e91c5c5d27930716fc06ff1845697))
+* **rollapp:** state index refactor ([#73](https://github.com/decentrio/dymension/issues/73)) ([4d6ecf1](https://github.com/decentrio/dymension/commit/4d6ecf17ad336b0ac381562f33788c0f526eac42))
+* **sequencer:** add ability to create sequencer ([#41](https://github.com/decentrio/dymension/issues/41)) ([8bd90e2](https://github.com/decentrio/dymension/commit/8bd90e2689635ec61f8c44f82683ecbdc358cfb6)), closes [#39](https://github.com/decentrio/dymension/issues/39)
+* **sequencer:** create sequencer tests ([#58](https://github.com/decentrio/dymension/issues/58)) ([25a316a](https://github.com/decentrio/dymension/commit/25a316af80147ea1014fa2397bae2b2679f7ce32))
+* **sequencer:** sequencer scheduler ([#64](https://github.com/decentrio/dymension/issues/64)) ([6cca902](https://github.com/decentrio/dymension/commit/6cca9024fc09d08b28ae76f76c1bef92af30a5df))
+* simulation tests ([#76](https://github.com/decentrio/dymension/issues/76)) ([3fc38ce](https://github.com/decentrio/dymension/commit/3fc38ceeac18acd8b91d8eb1e591f2994aa0e8a7))
+* update state ([#63](https://github.com/decentrio/dymension/issues/63)) ([2a4290d](https://github.com/decentrio/dymension/commit/2a4290d6047178042a19b74795ddef1301461797))
 
 
 
