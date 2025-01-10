@@ -1,7 +1,7 @@
 # Changelog
 ## [Unreleased]
 
-# [](https://github.com/decentrio/dymension/compare/v6.0.0...v) (2024-12-30)
+# [](https://github.com/decentrio/dymension/compare/v6.0.0...v) (2025-01-10)
 
 
 
